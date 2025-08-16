@@ -121,22 +121,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ユーザーサインイン処理
   const handleUserSignIn = async (firebaseUser: FirebaseUser) => {
     try {
-      let profile = await firebaseService.getUserProfile(firebaseUser.uid)
-      
-      if (!profile) {
-        // 新規ユーザーのプロフィール作成
-        const newProfile: Omit<User, 'uid'> = {
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || '',
-          photoURL: firebaseUser.photoURL || undefined,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-        
-        await firebaseService.createUserProfile(firebaseUser.uid, newProfile)
-        profile = { ...newProfile, uid: firebaseUser.uid }
-      }
-      
+      // 新しいsyncUserProfile機能を使用
+      const profile = await firebaseService.syncUserProfile(firebaseUser)
       setUserProfile(profile)
     } catch (err) {
       console.error('Failed to handle user sign in:', err)
@@ -283,20 +269,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const migrateGuestData = async () => {
     try {
       if (!isGuestMode || !currentUser) {
-        throw new Error('Invalid migration state')
+        throw new Error('Invalid migration state: ゲストモードでないか、認証ユーザーが存在しません')
       }
       
-      // TODO: ゲストデータの移行処理を実装
-      // 1. ローカルストレージからゲストデータを取得
-      // 2. Firebase にデータを移行
-      // 3. ローカルデータをクリーンアップ
+      setError(null)
       
-      console.log('Guest data migration will be implemented in data service layer')
+      // 1. ローカルストレージからゲストデータを検出・取得
+      const guestDataInfo = firebaseService.detectGuestData()
+      
+      if (!guestDataInfo.hasData) {
+        console.log('No guest data found to migrate')
+        // ゲストモードを無効化
+        setIsGuestMode(false)
+        localStorage.removeItem(GUEST_MODE_KEY)
+        localStorage.removeItem(GUEST_USER_KEY)
+        return
+      }
+      
+      console.log('Guest data detected:', guestDataInfo.summary)
+      
+      // 2. Firebase にデータを移行
+      const migrationResult = await firebaseService.migrateGuestDataToFirestore(
+        currentUser.uid,
+        guestDataInfo.data
+      )
+      
+      if (!migrationResult.success) {
+        throw new Error(`データ移行に失敗しました: ${migrationResult.errors.join(', ')}`)
+      }
+      
+      console.log('Guest data migration completed:', migrationResult.migratedItems)
+      
+      // 3. ローカルデータをクリーンアップ
+      firebaseService.clearGuestData()
       
       // ゲストモードを無効化
       setIsGuestMode(false)
-      localStorage.removeItem(GUEST_MODE_KEY)
-      localStorage.removeItem(GUEST_USER_KEY)
+      
+      // ユーザープロフィールを再取得（移行されたデータが反映されるように）
+      await refreshUserProfile()
       
     } catch (err) {
       console.error('Failed to migrate guest data:', err)

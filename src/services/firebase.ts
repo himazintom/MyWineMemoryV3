@@ -21,10 +21,12 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
+  deleteDoc,
   collection, 
   query, 
   where, 
-  getDocs
+  getDocs,
+  writeBatch
 } from 'firebase/firestore'
 import type {
   Firestore,
@@ -239,6 +241,102 @@ class FirebaseService {
   }
   
   /**
+   * ユーザープロフィールの削除
+   */
+  async deleteUserProfile(uid: string): Promise<void> {
+    try {
+      const userRef = doc(this.firestore, 'users', uid)
+      await deleteDoc(userRef)
+    } catch (error) {
+      console.error('Failed to delete user profile:', error)
+      throw error
+    }
+  }
+  
+  /**
+   * ユーザープロフィールの存在確認
+   */
+  async userProfileExists(uid: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, 'users', uid)
+      const userDoc = await getDoc(userRef)
+      return userDoc.exists()
+    } catch (error) {
+      console.error('Failed to check user profile existence:', error)
+      return false
+    }
+  }
+  
+  /**
+   * Firebase Auth User から Firestore User Profile を作成または更新
+   */
+  async syncUserProfile(firebaseUser: FirebaseUser): Promise<User> {
+    try {
+      const uid = firebaseUser.uid
+      let profile = await this.getUserProfile(uid)
+      
+      if (!profile) {
+        // 新規ユーザーの場合、プロフィールを作成
+        const newProfile: Omit<User, 'uid'> = {
+          email: firebaseUser.email || '',
+          displayName: firebaseUser.displayName || '',
+          photoURL: firebaseUser.photoURL || undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          preferences: {
+            theme: 'auto',
+            language: 'ja',
+            notifications: {
+              push: true,
+              email: true,
+              streakReminder: true,
+              quizReminder: true,
+              heartRecovery: true
+            },
+            privacy: {
+              publicProfile: false,
+              publicRecords: false,
+              showPrices: false
+            }
+          }
+        }
+        
+        await this.createUserProfile(uid, newProfile)
+        profile = { ...newProfile, uid }
+      } else {
+        // 既存ユーザーの場合、Firebase Authの情報で更新
+        const updates: Partial<User> = {}
+        let needsUpdate = false
+        
+        if (profile.email !== firebaseUser.email) {
+          updates.email = firebaseUser.email || ''
+          needsUpdate = true
+        }
+        
+        if (profile.displayName !== firebaseUser.displayName) {
+          updates.displayName = firebaseUser.displayName || ''
+          needsUpdate = true
+        }
+        
+        if (profile.photoURL !== firebaseUser.photoURL) {
+          updates.photoURL = firebaseUser.photoURL || undefined
+          needsUpdate = true
+        }
+        
+        if (needsUpdate) {
+          await this.updateUserProfile(uid, updates)
+          profile = { ...profile, ...updates, updatedAt: new Date() }
+        }
+      }
+      
+      return profile
+    } catch (error) {
+      console.error('Failed to sync user profile:', error)
+      throw error
+    }
+  }
+  
+  /**
    * コレクションからドキュメントを取得
    */
   async getCollection(collectionName: string, userId?: string): Promise<QuerySnapshot<DocumentData>> {
@@ -254,6 +352,245 @@ class FirebaseService {
     } catch (error) {
       console.error(`Failed to get collection ${collectionName}:`, error)
       throw error
+    }
+  }
+  
+  // ===============================
+  // ゲストデータ移行関連メソッド
+  // ===============================
+  
+  /**
+   * ローカルストレージからゲストデータを検出・取得
+   */
+  detectGuestData(): {
+    hasData: boolean
+    dataTypes: string[]
+    summary: string
+    data: Record<string, any>
+  } {
+    const guestDataKeys = [
+      'guest_user_data',
+      'guest_tasting_records',
+      'guest_wine_collection',
+      'guest_quiz_progress',
+      'guest_user_stats',
+      'guest_daily_goals'
+    ]
+    
+    const detectedData: Record<string, any> = {}
+    const dataTypes: string[] = []
+    
+    for (const key of guestDataKeys) {
+      const data = localStorage.getItem(key)
+      if (data) {
+        try {
+          const parsedData = JSON.parse(data)
+          detectedData[key] = parsedData
+          dataTypes.push(key.replace('guest_', ''))
+        } catch (error) {
+          console.warn(`Failed to parse guest data for key: ${key}`, error)
+        }
+      }
+    }
+    
+    const hasData = dataTypes.length > 0
+    const summary = this.generateGuestDataSummary(detectedData)
+    
+    return {
+      hasData,
+      dataTypes,
+      summary,
+      data: detectedData
+    }
+  }
+  
+  /**
+   * ゲストデータの要約を生成
+   */
+  private generateGuestDataSummary(data: Record<string, any>): string {
+    const summaryParts: string[] = []
+    
+    // テイスティング記録
+    if (data.guest_tasting_records) {
+      const records = Array.isArray(data.guest_tasting_records) 
+        ? data.guest_tasting_records 
+        : Object.values(data.guest_tasting_records)
+      summaryParts.push(`テイスティング記録: ${records.length}件`)
+    }
+    
+    // ワインコレクション
+    if (data.guest_wine_collection) {
+      const wines = Array.isArray(data.guest_wine_collection)
+        ? data.guest_wine_collection
+        : Object.values(data.guest_wine_collection)
+      summaryParts.push(`ワインコレクション: ${wines.length}件`)
+    }
+    
+    // クイズ進捗
+    if (data.guest_quiz_progress) {
+      const progress = data.guest_quiz_progress
+      if (progress.completedQuestions) {
+        summaryParts.push(`クイズ進捗: ${progress.completedQuestions.length}問完了`)
+      }
+    }
+    
+    // ユーザー統計
+    if (data.guest_user_stats) {
+      const stats = data.guest_user_stats
+      if (stats.totalRecords) {
+        summaryParts.push(`総記録数: ${stats.totalRecords}`)
+      }
+    }
+    
+    return summaryParts.length > 0 
+      ? summaryParts.join(', ')
+      : 'データが見つかりませんでした'
+  }
+  
+  /**
+   * ゲストデータをFirestoreに移行
+   */
+  async migrateGuestDataToFirestore(
+    userId: string, 
+    guestData: Record<string, any>
+  ): Promise<{
+    success: boolean
+    migratedItems: string[]
+    errors: string[]
+  }> {
+    const migratedItems: string[] = []
+    const errors: string[] = []
+    
+    try {
+      // バッチ処理用（Firestoreは500件まで）
+      const batch = writeBatch(this.firestore)
+      let operationCount = 0
+      
+      // 1. テイスティング記録の移行
+      if (guestData.guest_tasting_records) {
+        try {
+          const records = Array.isArray(guestData.guest_tasting_records)
+            ? guestData.guest_tasting_records
+            : Object.values(guestData.guest_tasting_records)
+          
+          for (const record of records) {
+            if (operationCount >= 400) break // 安全のため400件でストップ
+            
+            const recordRef = doc(collection(this.firestore, 'tastingRecords'))
+            batch.set(recordRef, {
+              ...record,
+              userId,
+              id: recordRef.id,
+              migratedAt: new Date(),
+              originalGuestId: record.id || 'unknown'
+            })
+            operationCount++
+          }
+          
+          migratedItems.push(`テイスティング記録: ${records.length}件`)
+        } catch (error) {
+          errors.push(`テイスティング記録の移行エラー: ${error}`)
+        }
+      }
+      
+      // 2. ワインコレクションの移行
+      if (guestData.guest_wine_collection) {
+        try {
+          const wines = Array.isArray(guestData.guest_wine_collection)
+            ? guestData.guest_wine_collection
+            : Object.values(guestData.guest_wine_collection)
+          
+          for (const wine of wines) {
+            if (operationCount >= 400) break
+            
+            const wineRef = doc(collection(this.firestore, 'wines'))
+            batch.set(wineRef, {
+              ...wine,
+              userId,
+              id: wineRef.id,
+              migratedAt: new Date(),
+              originalGuestId: wine.id || 'unknown'
+            })
+            operationCount++
+          }
+          
+          migratedItems.push(`ワインコレクション: ${wines.length}件`)
+        } catch (error) {
+          errors.push(`ワインコレクションの移行エラー: ${error}`)
+        }
+      }
+      
+      // 3. クイズ進捗の移行
+      if (guestData.guest_quiz_progress) {
+        try {
+          const progressRef = doc(this.firestore, 'quizProgress', userId)
+          batch.set(progressRef, {
+            ...guestData.guest_quiz_progress,
+            userId,
+            migratedAt: new Date()
+          })
+          operationCount++
+          
+          migratedItems.push('クイズ進捗')
+        } catch (error) {
+          errors.push(`クイズ進捗の移行エラー: ${error}`)
+        }
+      }
+      
+      // 4. ユーザー統計の移行
+      if (guestData.guest_user_stats) {
+        try {
+          const statsRef = doc(this.firestore, 'userStats', userId)
+          batch.set(statsRef, {
+            ...guestData.guest_user_stats,
+            userId,
+            migratedAt: new Date()
+          })
+          operationCount++
+          
+          migratedItems.push('ユーザー統計')
+        } catch (error) {
+          errors.push(`ユーザー統計の移行エラー: ${error}`)
+        }
+      }
+      
+      // バッチ実行
+      if (operationCount > 0) {
+        await batch.commit()
+      }
+      
+      return {
+        success: errors.length === 0,
+        migratedItems,
+        errors
+      }
+      
+    } catch (error) {
+      console.error('Guest data migration failed:', error)
+      return {
+        success: false,
+        migratedItems,
+        errors: [`移行処理エラー: ${error}`]
+      }
+    }
+  }
+  
+  /**
+   * ローカルストレージからゲストデータを削除
+   */
+  clearGuestData(): void {
+    const guestDataKeys = [
+      'guest_user_data',
+      'guest_tasting_records', 
+      'guest_wine_collection',
+      'guest_quiz_progress',
+      'guest_user_stats',
+      'guest_daily_goals',
+      'guest_mode'
+    ]
+    
+    for (const key of guestDataKeys) {
+      localStorage.removeItem(key)
     }
   }
   

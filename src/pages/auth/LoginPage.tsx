@@ -1,15 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import Button from '../../components/common/Button'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import firebaseService from '../../services/firebase'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { signInWithEmail, signInWithGoogle, switchToGuestMode, error, clearError } = useAuth()
+  const [isMigrating, setIsMigrating] = useState(false)
+  const [guestDataInfo, setGuestDataInfo] = useState<{
+    hasData: boolean
+    summary: string
+  } | null>(null)
+  
+  const { 
+    signInWithEmail, 
+    signInWithGoogle, 
+    switchToGuestMode, 
+    migrateGuestData, 
+    isGuestMode,
+    error, 
+    clearError 
+  } = useAuth()
   const navigate = useNavigate()
+
+  // ゲストデータの検出
+  useEffect(() => {
+    const detectedData = firebaseService.detectGuestData()
+    setGuestDataInfo({
+      hasData: detectedData.hasData,
+      summary: detectedData.summary
+    })
+  }, [])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,6 +43,12 @@ export default function LoginPage() {
       setIsLoading(true)
       clearError()
       await signInWithEmail(email, password)
+      
+      // ゲストデータがある場合は移行を実行
+      if (guestDataInfo?.hasData) {
+        await handleGuestDataMigration()
+      }
+      
       navigate('/')
     } catch (err) {
       // エラーはAuthContextで管理
@@ -32,11 +62,30 @@ export default function LoginPage() {
       setIsLoading(true)
       clearError()
       await signInWithGoogle()
+      
+      // ゲストデータがある場合は移行を実行
+      if (guestDataInfo?.hasData) {
+        await handleGuestDataMigration()
+      }
+      
       navigate('/')
     } catch (err) {
       // エラーはAuthContextで管理
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleGuestDataMigration = async () => {
+    try {
+      setIsMigrating(true)
+      await migrateGuestData()
+      console.log('Guest data migration completed successfully')
+    } catch (err) {
+      console.error('Guest data migration failed:', err)
+      // エラーは既にAuthContextで管理されている
+    } finally {
+      setIsMigrating(false)
     }
   }
 
@@ -56,6 +105,26 @@ export default function LoginPage() {
             variant="inline"
             onDismiss={clearError}
           />
+        )}
+        
+        {guestDataInfo?.hasData && (
+          <div className="guest-data-notice">
+            <div className="notice-icon">📦</div>
+            <div className="notice-content">
+              <h3>ゲストデータが見つかりました</h3>
+              <p>{guestDataInfo.summary}</p>
+              <p className="notice-small">
+                ログインすると、これらのデータが自動的にアカウントに移行されます。
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {isMigrating && (
+          <div className="migration-progress">
+            <div className="progress-icon">⏳</div>
+            <p>ゲストデータを移行中...</p>
+          </div>
         )}
         
         <form className="auth-form" onSubmit={handleEmailSubmit}>
