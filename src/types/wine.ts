@@ -26,20 +26,24 @@ export interface TastingNotes {
   overall?: string
 }
 
-export enum WineType {
-  RED = 'red',
-  WHITE = 'white',
-  ROSE = 'rose',
-  SPARKLING = 'sparkling',
-  FORTIFIED = 'fortified',
-  DESSERT = 'dessert'
-}
+export const WineType = {
+  RED: 'red',
+  WHITE: 'white',
+  ROSE: 'rose',
+  SPARKLING: 'sparkling',
+  FORTIFIED: 'fortified',
+  DESSERT: 'dessert'
+} as const
 
-export enum WineColor {
-  LIGHT = 'light',
-  MEDIUM = 'medium',
-  DEEP = 'deep'
-}
+export type WineType = typeof WineType[keyof typeof WineType]
+
+export const WineColor = {
+  LIGHT: 'light',
+  MEDIUM: 'medium',
+  DEEP: 'deep'
+} as const
+
+export type WineColor = typeof WineColor[keyof typeof WineColor]
 
 export interface WineFilters {
   type?: WineType

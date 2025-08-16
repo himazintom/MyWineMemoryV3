@@ -7,14 +7,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+
+# Build output
 dist
 dist-ssr
+build
 *.local
+.cache
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -22,3 +38,52 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Firebase
+.firebase/
+.firebaserc.local
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+pubsub-debug.log*
+storage.rules
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# PWA
+sw.js
+workbox-*.js
+
+# Claude Code specific
+.claude/build-errors.log
+.claude/type-errors.log
+.claude/build-errors-analysis.md
+.claude/type-errors-analysis.md
+.claude/hooks/*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+~*
+
+# Package manager files (keep only the one you use)
+# For npm: keep package-lock.json
+# For yarn: keep yarn.lock
+# For pnpm: keep pnpm-lock.yaml
+yarn.lock
+pnpm-lock.yaml

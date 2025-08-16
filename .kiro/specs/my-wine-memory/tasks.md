@@ -12,9 +12,10 @@
 
 - [x] 1.1 開発環境設定
 
-  - ESLint、Prettier、TypeScript設定ファイルの作成
-  - Vite設定ファイル（vite.config.ts）の作成とPWA設定
-  - 環境変数検証スクリプト（scripts/validate-env.js）の実装
+  - [x] ESLint、Prettier、TypeScript設定ファイルの作成
+  - [x] Vite設定ファイル（vite.config.ts）の作成とPWA設定
+  - [x] 環境変数検証機能とvite-env.d.ts作成
+  - [x] TypeScriptビルドエラー修正完了
   - _要件: 13.パフォーマンス最適化、21.運用・監視_
 
 
@@ -27,13 +28,13 @@
 
 ## 認証システム実装
 
-- [ ] 2. Firebase認証基盤の実装
+- [x] 2. Firebase認証基盤の実装
   - Firebase設定ファイル（src/services/firebase.ts）の作成
   - FirebaseServiceクラスのシングルトンパターン実装
   - 基本的な認証メソッド（Google OAuth）の実装
   - _要件: 1.ユーザー認証システム_
 
-- [ ] 2.1 AuthContextの実装
+- [x] 2.1 AuthContextの実装
   - AuthContextとAuthProviderの作成
   - 認証状態管理（currentUser, userProfile, loading）
   - ゲストモード対応（localStorage利用）
@@ -59,24 +60,29 @@
   - 指数バックオフによる自動リトライ機能
   - _要件: 11.エラーハンドリング・オフライン対応_
 
-- [ ] 3.1 共通UIコンポーネント
-  - LoadingSpinnerコンポーネントの作成
-  - ErrorMessageコンポーネントの作成（role="alert"対応）
-  - 基本的なButtonコンポーネントの作成
+- [x] 3.1 共通UIコンポーネント
+  - [x] LoadingSpinnerコンポーネントの作成
+  - [x] ErrorMessageコンポーネントの作成（role="alert"対応）
+  - [x] 基本的なButtonコンポーネントの作成
+  - [x] ErrorBoundaryコンポーネントの作成
   - _要件: 20.レスポンシブデザイン・アクセシビリティ_
 
-- [ ] 3.2 ルーティング設定
-  - React Router v7の設定
-  - 全ページコンポーネントのReact.lazy遅延読み込み
-  - ScrollToTopコンポーネントの実装
+- [x] 3.2 ルーティング設定
+  - [x] React Router v7の設定
+  - [x] 全ページコンポーネントのReact.lazy遅延読み込み
+  - [x] ScrollToTopコンポーネントの実装
+  - [x] LayoutコンポーネントとHeader、BottomNavigationの作成
   - _要件: 20.レスポンシブデザイン・アクセシビリティ_
 
 ## データモデル・サービス層
 
-- [ ] 4. データモデル定義
-  - TastingRecord型の完全な定義
-  - DetailedAnalysis、Environment、Citation型の定義
-  - QuizProgress、UserQuizStats型の定義
+- [x] 4. データモデル定義
+  - [x] TastingRecord型の完全な定義
+  - [x] DetailedAnalysis、Environment、Citation型の定義
+  - [x] QuizProgress、UserQuizStats型の定義
+  - [x] DailyQuiz、2100問ワインクイズのデータ構造
+  - [x] ゲーミフィケーション関連型の定義
+  - [x] types/index.tsでの統合エクスポート完了
   - _要件: 2.ワインテイスティング記録システム、4.ワインクイズ学習システム_
 
 - [ ] 4.1 TastingRecordService実装
