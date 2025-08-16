@@ -1,0 +1,307 @@
+# MyWineMemory .gitignore
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# IDE and Editor files
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+/coverage
+/.nyc_output
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Bundle analyzer
+stats.html
+bundle-analyzer-report.html
+
+# Sentry
+.sentryclirc
+
+# Local development
+.local
+
+# PWA
+sw.js
+workbox-*.js
+
+# Auto-generated files
+src/types/auto-generated/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary commit message files
+.commit-message.tmp
+
+# Claude Code generated files (if any)
+.claude-cache/
+
+# Kiro IDE files
+# Keep specs and steering files (project documentation)
+# .kiro/specs/          # Keep - project specifications
+# .kiro/steering/       # Keep - project steering rules
+
+# Ignore Kiro temporary/cache files
+.kiro/cache/
+.kiro/temp/
+.kiro/.cache/
+.kiro/logs/
+.kiro/session/
+.kiro/workspace.json
+.kiro/settings/local.json
+
+# Ignore Kiro user-specific settings (if any)
+.kiro/user/
+.kiro/personal/
+
+# Firebase Functions (if added later)
+functions/node_modules/
+functions/.env
+functions/.env.local
+
+# Firebase Emulator
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Service Account Keys (NEVER commit these)
+*-service-account-key.json
+service-account-*.json
+
+# Local Firebase config (if using multiple projects)
+.firebaserc.local
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Local SSL certificates
+*.pem
+*.key
+*.crt
+
+# Package manager lock files (choose one)
+# Keep yarn.lock if using Yarn
+# Keep package-lock.json if using npm
+# Keep pnpm-lock.yaml if using pnpm
+# yarn.lock
+# package-lock.json
+# pnpm-lock.yaml
+
+# Ignore all lock files except the one you're using
+# Uncomment the ones you DON'T want to track:
+# yarn.lock
+# package-lock.json
+# pnpm-lock.yaml
+
+# Local development certificates
+localhost.pem
+localhost-key.pem
+
+# Ignore sensitive configuration files
+config/local.json
+config/development.json
+config/production.json
+
+# Ignore uploaded files during development
+uploads/
+public/uploads/
+
+# Ignore generated documentation
+docs/generated/
+
+# Ignore performance profiling files
+*.cpuprofile
+*.heapprofile
+
+# Ignore security scan results
+security-report.json
+audit-report.json
+
+# Ignore local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore local Redis dumps
+dump.rdb
+
+# Ignore local development scripts
+scripts/local-*
+scripts/dev-*
+
+# Ignore temporary API keys file
+api-keys.local.json
+
+# Ignore local testing data
+test-data/local/
+
+# Ignore local backup files
+backups/local/
+
+# Ignore IDE-specific files
+*.code-workspace
+
+# Ignore OS-specific files
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Ignore temporary files created by editors
+*~
+.#*
+\#*#
+.*.swp
+.*.swo
+
+# Ignore files created by Windows
+desktop.ini
+$RECYCLE.BIN/
+
+# Ignore files created by macOS
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
