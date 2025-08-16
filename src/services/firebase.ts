@@ -109,6 +109,27 @@ class FirebaseService {
     return FirebaseService.instance
   }
   
+  /**
+   * Firestoreインスタンスの取得
+   */
+  public getFirestore(): Firestore {
+    return this.firestore
+  }
+  
+  /**
+   * Authインスタンスの取得
+   */
+  public getAuth(): Auth {
+    return this.auth
+  }
+  
+  /**
+   * Storageインスタンスの取得
+   */
+  public getStorage(): FirebaseStorage {
+    return this.storage
+  }
+  
   // ===============================
   // 認証関連メソッド
   // ===============================

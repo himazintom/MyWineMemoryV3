@@ -1,6 +1,6 @@
-// ‹š©nq¨¯¹İüÈ
+// çµ±åˆå‹ã‚¨ã‚¯ã‚¹ãƒãƒ¼ãƒˆ
 
-// æü¶ü¢#
+// ãƒ¦ãƒ¼ã‚¶ãƒ¼é–¢é€£
 export type { 
   User, 
   UserPreferences, 
@@ -8,7 +8,7 @@ export type {
   UserStats 
 } from './user'
 
-// ï¤ó¢#
+// ãƒ¯ã‚¤ãƒ³é–¢é€£
 export type { 
   Wine, 
   TastingNotes, 
@@ -19,7 +19,7 @@ export type {
 
 export { WineType, WineColor } from './wine'
 
-// Æ¤¹Æ£ó°2¢#
+// ãƒ†ã‚¤ã‚¹ãƒ†ã‚£ãƒ³ã‚°è¨˜éŒ²é–¢é€£
 export type {
   TastingRecord,
   DetailedAnalysis,
@@ -32,7 +32,7 @@ export type {
 
 export { GlassType } from './tasting'
 
-// ¯¤º¢#
+// ã‚¯ã‚¤ã‚ºé–¢é€£
 export type {
   QuizQuestion,
   QuizProgress,
@@ -44,7 +44,7 @@ export type {
 
 export { QuizCategory } from './quiz'
 
-// ïóÎÃ¯¤º¢#
+// ãƒ‡ã‚¤ãƒªãƒ¼ã‚¯ã‚¤ã‚ºé–¢é€£
 export type {
   DailyQuizSession,
   DailyQuizQuestion,
@@ -57,7 +57,7 @@ export type {
 
 export { WineQuizCategory } from './daily-quiz'
 
-// ²üßÕ£±ü·çó¢#
+// ã‚²ãƒ¼ãƒŸãƒ•ã‚£ã‚±ãƒ¼ã‚·ãƒ§ãƒ³é–¢é€£
 export type {
   UserXP,
   XPRecord,

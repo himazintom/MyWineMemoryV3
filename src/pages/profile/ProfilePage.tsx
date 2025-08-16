@@ -5,7 +5,7 @@ import Button from '../../components/common/Button'
 import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function ProfilePage() {
-  const { currentUser, userProfile, isGuestMode, signOut, updateUserProfile, error, clearError } = useAuth()
+  const { userProfile, isGuestMode, signOut, updateUserProfile, error, clearError } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     displayName: userProfile?.displayName || '',

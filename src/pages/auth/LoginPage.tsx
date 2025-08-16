@@ -19,8 +19,7 @@ export default function LoginPage() {
     signInWithEmail, 
     signInWithGoogle, 
     switchToGuestMode, 
-    migrateGuestData, 
-    isGuestMode,
+    migrateGuestData,
     error, 
     clearError 
   } = useAuth()
