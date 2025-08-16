@@ -2,19 +2,24 @@
 
 ## プロジェクト初期設定
 
-- [ ] 1. プロジェクト基盤構築
+- [x] 1. プロジェクト基盤構築
+
+
   - React 18 + TypeScript + Vite プロジェクトの初期化
   - 必要な依存関係のインストール（Firebase SDK、Chart.js、React Router等）
   - 基本的なフォルダ構造の作成（src/components, src/pages, src/services等）
   - _要件: 全体的な技術基盤_
 
-- [ ] 1.1 開発環境設定
+- [x] 1.1 開発環境設定
+
   - ESLint、Prettier、TypeScript設定ファイルの作成
   - Vite設定ファイル（vite.config.ts）の作成とPWA設定
   - 環境変数検証スクリプト（scripts/validate-env.js）の実装
   - _要件: 13.パフォーマンス最適化、21.運用・監視_
 
-- [ ] 1.2 Firebase プロジェクト設定
+
+- [x] 1.2 Firebase プロジェクト設定
+
   - Firebase プロジェクトの作成と設定
   - Firestore、Authentication、Storage、Hostingの有効化
   - firebase.json設定ファイルの作成
