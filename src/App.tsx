@@ -5,6 +5,7 @@ import LoadingSpinner from './components/common/LoadingSpinner'
 import Layout from './components/layout/Layout'
 import ScrollToTop from './components/common/ScrollToTop'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -13,6 +14,7 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const WinesPage = lazy(() => import('./pages/wines/WinesPage'))
 const WineDetailPage = lazy(() => import('./pages/wines/WineDetailPage'))
 const AddWinePage = lazy(() => import('./pages/wines/AddWinePage'))
+const SelectWinePage = lazy(() => import('./pages/wines/SelectWinePage'))
 const RecordsPage = lazy(() => import('./pages/records/RecordsPage'))
 const RecordDetailPage = lazy(() => import('./pages/records/RecordDetailPage'))
 const AddRecordPage = lazy(() => import('./pages/records/AddRecordPage'))
@@ -24,8 +26,9 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
           <ScrollToTop />
           <Layout>
           <Suspense fallback={<LoadingSpinner />}>
@@ -37,6 +40,7 @@ function App() {
               
               {/* Wine management routes */}
               <Route path="/wines" element={<WinesPage />} />
+              <Route path="/wines/select" element={<SelectWinePage />} />
               <Route path="/wines/:id" element={<WineDetailPage />} />
               <Route path="/wines/add" element={<AddWinePage />} />
               
@@ -57,8 +61,9 @@ function App() {
             </Routes>
           </Suspense>
         </Layout>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

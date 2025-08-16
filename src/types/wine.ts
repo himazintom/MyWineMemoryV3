@@ -55,3 +55,19 @@ export interface WineFilters {
   maxRating?: number
   vintage?: number
 }
+
+// 人気ワイン（記録が多いワイン）の型定義
+export interface PopularWine {
+  wineName: string
+  producer: string
+  country: string
+  region?: string
+  type: WineType
+  color: WineColor
+  vintage?: number
+  alcoholContent?: number
+  price?: number
+  recordCount: number
+  averageRating: number
+  lastTasted: Date
+}

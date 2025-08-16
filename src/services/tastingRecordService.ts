@@ -16,7 +16,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import firebaseService from './firebase'
-import type { TastingRecord, WineMatch } from '../types'
+import type { TastingRecord, WineMatch, PopularWine } from '../types'
 
 /**
  * テイスティング記録管理サービス
@@ -513,6 +513,186 @@ class TastingRecordService {
     } catch (error) {
       console.error('Failed to find similar wines:', error)
       throw new Error(`類似ワインの検索に失敗しました: ${error}`)
+    }
+  }
+
+  /**
+   * 人気ワイン（記録が多いワイン）を取得
+   */
+  async getPopularWines(userId?: string, limitCount: number = 10): Promise<PopularWine[]> {
+    try {
+      const firestore = firebaseService.getFirestore()
+      
+      // 公開記録または自分の記録を取得
+      let q = query(
+        collection(firestore, this.collectionName),
+        orderBy('createdAt', 'desc')
+      )
+
+      if (userId) {
+        // ユーザーの記録に限定する場合
+        q = query(q, where('userId', '==', userId))
+      } else {
+        // 公開記録のみ取得
+        q = query(q, where('isPublic', '==', true))
+      }
+
+      const snapshot = await getDocs(q)
+      const records = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as TastingRecord[]
+
+      // ワイン名 + 生産者の組み合わせで集計
+      const wineMap = new Map<string, {
+        wine: PopularWine
+        ratings: number[]
+        lastTasted: Date
+      }>()
+
+      records.forEach(record => {
+        const key = `${record.wineName}_${record.producer}`
+        
+        if (wineMap.has(key)) {
+          const existing = wineMap.get(key)!
+          existing.wine.recordCount++
+          existing.ratings.push(record.rating)
+          if (record.tastingDate > existing.lastTasted) {
+            existing.lastTasted = record.tastingDate
+          }
+        } else {
+          wineMap.set(key, {
+            wine: {
+              wineName: record.wineName,
+              producer: record.producer,
+              country: record.country,
+              region: record.region,
+              type: record.type,
+              color: record.color,
+              vintage: record.vintage,
+              alcoholContent: record.alcoholContent,
+              price: record.price,
+              recordCount: 1,
+              averageRating: 0, // 後で計算
+              lastTasted: record.tastingDate
+            },
+            ratings: [record.rating],
+            lastTasted: record.tastingDate
+          })
+        }
+      })
+
+      // 平均評価を計算し、PopularWine配列に変換
+      const popularWines: PopularWine[] = Array.from(wineMap.values()).map(({ wine, ratings, lastTasted }) => ({
+        ...wine,
+        averageRating: ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length,
+        lastTasted
+      }))
+
+      // 記録数でソートし、上位limitCount件を返す
+      return popularWines
+        .sort((a, b) => {
+          // 記録数優先、同じなら平均評価で並び替え
+          if (b.recordCount !== a.recordCount) {
+            return b.recordCount - a.recordCount
+          }
+          return b.averageRating - a.averageRating
+        })
+        .slice(0, limitCount)
+
+    } catch (error) {
+      console.error('Failed to get popular wines:', error)
+      throw new Error(`人気ワインの取得に失敗しました: ${error}`)
+    }
+  }
+
+  /**
+   * ワイン名で検索
+   */
+  async searchWines(searchTerm: string, userId?: string): Promise<PopularWine[]> {
+    try {
+      if (!searchTerm.trim()) {
+        return []
+      }
+
+      const firestore = firebaseService.getFirestore()
+      
+      let q = query(
+        collection(firestore, this.collectionName),
+        orderBy('wineName')
+      )
+
+      if (userId) {
+        q = query(q, where('userId', '==', userId))
+      } else {
+        q = query(q, where('isPublic', '==', true))
+      }
+
+      const snapshot = await getDocs(q)
+      const records = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as TastingRecord[]
+
+      // 検索語でフィルタリング
+      const searchLower = searchTerm.toLowerCase()
+      const filteredRecords = records.filter(record => 
+        record.wineName.toLowerCase().includes(searchLower) ||
+        record.producer.toLowerCase().includes(searchLower)
+      )
+
+      // ワイン名 + 生産者の組み合わせで集計
+      const wineMap = new Map<string, {
+        wine: PopularWine
+        ratings: number[]
+        lastTasted: Date
+      }>()
+
+      filteredRecords.forEach(record => {
+        const key = `${record.wineName}_${record.producer}`
+        
+        if (wineMap.has(key)) {
+          const existing = wineMap.get(key)!
+          existing.wine.recordCount++
+          existing.ratings.push(record.rating)
+          if (record.tastingDate > existing.lastTasted) {
+            existing.lastTasted = record.tastingDate
+          }
+        } else {
+          wineMap.set(key, {
+            wine: {
+              wineName: record.wineName,
+              producer: record.producer,
+              country: record.country,
+              region: record.region,
+              type: record.type,
+              color: record.color,
+              vintage: record.vintage,
+              alcoholContent: record.alcoholContent,
+              price: record.price,
+              recordCount: 1,
+              averageRating: 0,
+              lastTasted: record.tastingDate
+            },
+            ratings: [record.rating],
+            lastTasted: record.tastingDate
+          })
+        }
+      })
+
+      // 平均評価を計算し、PopularWine配列に変換
+      const searchResults: PopularWine[] = Array.from(wineMap.values()).map(({ wine, ratings, lastTasted }) => ({
+        ...wine,
+        averageRating: ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length,
+        lastTasted
+      }))
+
+      // 記録数でソート
+      return searchResults.sort((a, b) => b.recordCount - a.recordCount)
+
+    } catch (error) {
+      console.error('Failed to search wines:', error)
+      throw new Error(`ワイン検索に失敗しました: ${error}`)
     }
   }
 }

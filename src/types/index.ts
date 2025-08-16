@@ -14,7 +14,8 @@ export type {
   TastingNotes, 
   WineFilters,
   WineType,
-  WineColor 
+  WineColor,
+  PopularWine 
 } from './wine'
 
 export { WineType, WineColor } from './wine'

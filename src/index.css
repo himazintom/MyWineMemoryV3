@@ -14,19 +14,34 @@
   --wine-gold-light: #e6c757;
   --wine-gold-dark: #b8941f;
   
-  /* UI Colors */
+  /* Light theme colors */
   --background: #ffffff;
   --surface: #f8f9fa;
+  --surface-elevated: #ffffff;
   --border: #e9ecef;
+  --border-light: #f1f3f4;
   --text-primary: #212529;
   --text-secondary: #6c757d;
   --text-muted: #adb5bd;
+  --text-on-primary: #ffffff;
   
   /* Semantic colors */
   --success: #28a745;
+  --success-light: #d4edda;
   --warning: #ffc107;
+  --warning-light: #fff3cd;
   --error: #dc3545;
+  --error-light: #f8d7da;
   --info: #17a2b8;
+  --info-light: #d1ecf1;
+  
+  /* Primary colors for UI */
+  --primary: var(--wine-red);
+  --primary-light: var(--wine-red-light);
+  --primary-dark: var(--wine-red-dark);
+  --accent: var(--wine-gold);
+  --accent-light: var(--wine-gold-light);
+  --accent-dark: var(--wine-gold-dark);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -63,15 +78,49 @@
   --container-max-width: 1200px;
 }
 
-/* Dark theme */
+/* Dark theme variables */
+[data-theme="dark"] {
+  --background: #121212;
+  --surface: #1e1e1e;
+  --surface-elevated: #2a2a2a;
+  --border: #404040;
+  --border-light: #333333;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #9e9e9e;
+  --text-on-primary: #ffffff;
+  
+  /* Darker semantic colors for dark theme */
+  --success-light: #1b5e20;
+  --warning-light: #e65100;
+  --error-light: #b71c1c;
+  --info-light: #0d47a1;
+  
+  /* Adjust shadows for dark theme */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+}
+
+/* Auto dark theme (prefers-color-scheme) */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1a1a1a;
-    --surface: #2d2d2d;
+  :root:not([data-theme="light"]) {
+    --background: #121212;
+    --surface: #1e1e1e;
+    --surface-elevated: #2a2a2a;
     --border: #404040;
+    --border-light: #333333;
     --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
-    --text-muted: #737373;
+    --text-secondary: #e0e0e0;
+    --text-muted: #9e9e9e;
+    --text-on-primary: #ffffff;
+    --success-light: #1b5e20;
+    --warning-light: #e65100;
+    --error-light: #b71c1c;
+    --info-light: #0d47a1;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
   }
 }
 
@@ -573,4 +622,1596 @@ input:focus, select:focus, textarea:focus {
   margin-top: var(--spacing-md);
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--border);
+}
+
+/* TagInput Component */
+.tag-input-container {
+  width: 100%;
+}
+
+.tag-input-label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.required-asterisk {
+  color: var(--error);
+  margin-left: var(--spacing-xs);
+}
+
+.tag-input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  min-height: 2.5rem;
+  cursor: text;
+  transition: all 0.2s ease;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.tag-input-wrapper:hover {
+  border-color: var(--primary);
+}
+
+.tag-input-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.tag-input-wrapper.disabled {
+  background-color: var(--surface);
+  border-color: var(--border-light);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tag-input-wrapper.tag-focused {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background-color: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  max-width: 200px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tag:hover {
+  background-color: var(--border-light);
+}
+
+.tag:focus {
+  outline: none;
+  background-color: var(--primary);
+  color: var(--text-on-primary);
+  border-color: var(--primary);
+}
+
+.tag.focused {
+  background-color: var(--primary);
+  color: var(--text-on-primary);
+  border-color: var(--primary);
+}
+
+.tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  padding: 0;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tag-remove:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.tag-remove:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.tag-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  flex: 1;
+  min-width: 120px;
+  padding: var(--spacing-xs) 0;
+  line-height: 1.5;
+}
+
+.tag-input::placeholder {
+  color: var(--text-muted);
+}
+
+.tag-input:disabled {
+  cursor: not-allowed;
+}
+
+.tag-input-counter {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+  text-align: right;
+}
+
+/* Dark theme adjustments for TagInput */
+[data-theme="dark"] .tag {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .tag:hover {
+  background-color: var(--border);
+}
+
+[data-theme="dark"] .tag-remove:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .tag-remove:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tag {
+    max-width: 150px;
+    font-size: var(--font-size-xs);
+  }
+  
+  .tag-input {
+    min-width: 100px;
+  }
+}
+
+/* SelectWine Page */
+.select-wine-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.search-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.search-input-container .loading-spinner {
+  position: absolute;
+  right: var(--spacing-md);
+  pointer-events: none;
+}
+
+.popular-wines-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.section-header h2 {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.wine-count {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  background-color: var(--surface);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+}
+
+.wine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.wine-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.wine-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.wine-card:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.wine-info {
+  margin-bottom: var(--spacing-md);
+}
+
+.wine-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.3;
+}
+
+.wine-producer {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-xs) 0;
+  font-weight: 500;
+}
+
+.wine-origin {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.wine-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-light);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  color: var(--text-muted);
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+.new-wine-section {
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+}
+
+.new-wine-button {
+  min-width: 200px;
+}
+
+.new-wine-form-section {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.new-wine-form-section h2 {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.new-wine-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-light);
+}
+
+/* Dark theme adjustments for SelectWine */
+[data-theme="dark"] .wine-card {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .wine-card:hover {
+  border-color: var(--primary);
+  background-color: var(--surface);
+}
+
+[data-theme="dark"] .wine-stats {
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .new-wine-form-section {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .empty-state {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+/* Responsive adjustments for SelectWine */
+@media (max-width: 768px) {
+  .select-wine-page {
+    padding: var(--spacing-md);
+  }
+  
+  .wine-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .wine-card {
+    padding: var(--spacing-md);
+  }
+  
+  .wine-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat:last-child {
+    grid-column: 1 / -1;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* AddTastingRecord Page */
+.add-tasting-record-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* Mode Selector */
+.mode-selector {
+  text-align: center;
+  padding: var(--spacing-xxl) 0;
+}
+
+.mode-selector h2 {
+  font-size: var(--font-size-2xl);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mode-description {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-xxl);
+}
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.mode-card {
+  background-color: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  text-align: center;
+}
+
+.mode-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.mode-card:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.mode-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.mode-card h3 {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.mode-card > p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-base);
+}
+
+.mode-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-lg) 0;
+  text-align: left;
+}
+
+.mode-card li {
+  padding: var(--spacing-xs) 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  position: relative;
+  padding-left: var(--spacing-lg);
+}
+
+.mode-card li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: bold;
+}
+
+.mode-badge {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background-color: var(--primary);
+  color: var(--text-on-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mode-badge.pro {
+  background-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Form Sections */
+.tasting-record-form {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-section {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.form-section h2 {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-header h2 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.section-description {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-sm) 0 var(--spacing-lg) 0;
+  font-style: italic;
+}
+
+/* Wine Selection */
+.selected-wine-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.wine-summary h3 {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.wine-summary p {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--text-secondary);
+}
+
+.wine-origin {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.wine-vintage {
+  font-size: var(--font-size-sm);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.change-wine-btn {
+  flex-shrink: 0;
+  margin-left: var(--spacing-md);
+}
+
+.wine-selection-prompt {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  background-color: var(--surface-elevated);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.wine-selection-prompt p {
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-base);
+}
+
+/* Rating Input */
+.rating-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.rating-slider {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(to right, 
+    var(--error) 0%, 
+    var(--warning) 50%, 
+    var(--success) 100%);
+  border-radius: var(--radius-md);
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.rating-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.rating-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.rating-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rating-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.rating-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Checkbox styling */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.form-help {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+  font-style: italic;
+}
+
+/* Coming Soon placeholder */
+.coming-soon {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  background-color: var(--surface-elevated);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+}
+
+/* Dark theme adjustments for AddTastingRecord */
+[data-theme="dark"] .mode-card {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .mode-card:hover {
+  border-color: var(--primary);
+  background-color: var(--surface);
+}
+
+[data-theme="dark"] .form-section {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .selected-wine-info {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .wine-selection-prompt {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .coming-soon {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+/* Responsive adjustments for AddTastingRecord */
+@media (max-width: 768px) {
+  .add-tasting-record-page {
+    padding: var(--spacing-md);
+  }
+  
+  .mode-cards {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+  
+  .mode-card {
+    padding: var(--spacing-lg);
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+  }
+  
+  .selected-wine-info {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .change-wine-btn {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+  
+  .rating-display {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+  
+  .form-section {
+    padding: var(--spacing-lg);
+  }
+}
+
+/* Detailed Analysis Forms */
+.detailed-analysis {
+  margin-bottom: var(--spacing-xl);
+}
+
+.detailed-analysis h2 {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detailed-analysis h2::before {
+  content: "🔬";
+  font-size: var(--font-size-lg);
+}
+
+/* Slider Components */
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.slider-container input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: var(--border-light);
+  border-radius: var(--radius-md);
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider-container input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+.slider-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--primary);
+  text-align: center;
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--surface-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  min-width: 40px;
+}
+
+/* Aroma Categories */
+.aroma-categories {
+  margin-top: var(--spacing-xl);
+}
+
+.aroma-categories h3 {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.category-group {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+/* Structure Grid */
+.structure-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.structure-grid .form-group {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: 0;
+}
+
+/* Enhanced form styling for detailed analysis */
+.detailed-analysis .form-row {
+  margin-bottom: var(--spacing-lg);
+}
+
+.detailed-analysis .form-group label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.detailed-analysis input[type="text"],
+.detailed-analysis textarea,
+.detailed-analysis select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.detailed-analysis input[type="text"]:focus,
+.detailed-analysis textarea:focus,
+.detailed-analysis select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.detailed-analysis input[type="number"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.detailed-analysis input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+/* Visual indicators for different analysis sections */
+.detailed-analysis[data-section="appearance"] h2::before {
+  content: "👁️";
+}
+
+.detailed-analysis[data-section="aroma"] h2::before {
+  content: "👃";
+}
+
+.detailed-analysis[data-section="taste"] h2::before {
+  content: "👅";
+}
+
+.detailed-analysis[data-section="structure"] h2::before {
+  content: "⚖️";
+}
+
+.detailed-analysis[data-section="environment"] h2::before {
+  content: "🌍";
+}
+
+/* Dark theme adjustments for detailed analysis */
+[data-theme="dark"] .category-group {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .structure-grid .form-group {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .slider-value {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .detailed-analysis input[type="text"],
+[data-theme="dark"] .detailed-analysis textarea,
+[data-theme="dark"] .detailed-analysis select,
+[data-theme="dark"] .detailed-analysis input[type="number"] {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .detailed-analysis input[type="text"]:focus,
+[data-theme="dark"] .detailed-analysis textarea:focus,
+[data-theme="dark"] .detailed-analysis select:focus,
+[data-theme="dark"] .detailed-analysis input[type="number"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.2);
+}
+
+/* Responsive adjustments for detailed analysis */
+@media (max-width: 768px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .structure-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .category-group {
+    padding: var(--spacing-md);
+  }
+  
+  .structure-grid .form-group {
+    padding: var(--spacing-sm);
+  }
+  
+  .slider-container {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .detailed-analysis .form-row {
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+/* Records Page */
+.records-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+.records-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.records-page .page-header h1 {
+  font-size: var(--font-size-2xl);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* Success Message */
+.success-message {
+  background-color: var(--success-light);
+  color: var(--success);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--success);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Records Controls */
+.records-controls {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.records-controls .search-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.records-controls .search-input {
+  width: 100%;
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.records-controls .search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.filter-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  align-items: end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.filter-group label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.filter-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-elevated);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+/* Records Content */
+.records-content {
+  min-height: 400px;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* Record Groups */
+.record-group {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.group-header {
+  background-color: var(--surface-elevated);
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+}
+
+.group-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.group-name {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin: 0;
+  font-weight: 600;
+}
+
+.group-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.group-stats .stat {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  background-color: var(--surface);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+/* Records Grid */
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+/* Record Card */
+.record-card {
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.record-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.record-card:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(114, 47, 55, 0.1);
+}
+
+.record-card.highlight {
+  border-color: var(--primary);
+  background-color: rgba(114, 47, 55, 0.05);
+  animation: highlight-fade 3s ease-out;
+}
+
+@keyframes highlight-fade {
+  0% {
+    background-color: rgba(114, 47, 55, 0.15);
+  }
+  100% {
+    background-color: rgba(114, 47, 55, 0.05);
+  }
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.wine-info h3 {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.3;
+}
+
+.wine-info p {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.wine-origin {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.wine-vintage {
+  display: inline-block;
+  background-color: var(--accent);
+  color: var(--text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  margin-top: var(--spacing-xs);
+}
+
+.record-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.record-card:hover .record-actions {
+  opacity: 1;
+}
+
+/* Record Content */
+.record-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rating-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rating-display {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+}
+
+.rating-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.rating-max {
+  font-size: var(--font-size-base);
+  color: var(--text-muted);
+}
+
+.rating-bar {
+  flex: 1;
+  height: 6px;
+  background-color: var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.rating-fill {
+  height: 100%;
+  background: linear-gradient(to right, 
+    var(--error) 0%, 
+    var(--warning) 50%, 
+    var(--success) 100%);
+  transition: width 0.3s ease;
+}
+
+.notes-preview {
+  background-color: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+}
+
+.notes-preview p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.record-tags {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.record-tags .tag {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border);
+}
+
+.tag-more {
+  background-color: var(--text-muted);
+  color: var(--text-on-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.record-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-light);
+}
+
+.record-dates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.tasting-date {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.mode-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mode-quick {
+  background-color: var(--info-light);
+  color: var(--info);
+}
+
+.mode-detailed {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.record-status {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.public-badge,
+.private-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.public-badge {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.private-badge {
+  background-color: var(--text-muted);
+  color: var(--text-on-primary);
+}
+
+/* Empty State */
+.records-page .empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  background-color: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h2 {
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-base);
+}
+
+/* Dark theme adjustments for Records */
+[data-theme="dark"] .records-controls {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .record-group {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .group-header {
+  background-color: var(--surface);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .record-card {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .record-card:hover {
+  border-color: var(--primary);
+  background-color: var(--surface-elevated);
+}
+
+[data-theme="dark"] .record-card.highlight {
+  background-color: rgba(114, 47, 55, 0.1);
+}
+
+[data-theme="dark"] .notes-preview {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .empty-state {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+}
+
+/* Responsive adjustments for Records */
+@media (max-width: 768px) {
+  .records-page {
+    padding: var(--spacing-md);
+  }
+  
+  .records-page .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .filter-section {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .records-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+  }
+  
+  .record-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .record-actions {
+    opacity: 1;
+    align-self: flex-end;
+  }
+  
+  .rating-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .record-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .group-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .group-stats {
+    gap: var(--spacing-sm);
+  }
 }
