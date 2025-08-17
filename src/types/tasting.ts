@@ -1,4 +1,3 @@
-import type { WineType, WineColor } from './wine'
 
 // テイスティング記録の基本型
 export interface TastingRecord {
@@ -10,10 +9,10 @@ export interface TastingRecord {
   wineName: string
   producer: string
   vintage?: number
-  region: string
-  country: string
-  type: WineType
-  color: WineColor
+  region?: string
+  country?: string
+  type: string // WineType
+  grapes?: string[] // 品種
   alcoholContent?: number
   price?: number
   
@@ -21,7 +20,8 @@ export interface TastingRecord {
   tastingDate: Date
   mode: 'quick' | 'detailed'
   rating: number // 0.0-10.0
-  quickNotes?: string
+  notes?: string // quickNotesをnotesに統合
+  quickNotes?: string // 後方互換性のため
   
   // 詳細分析（詳細モード時）
   detailedAnalysis?: DetailedAnalysis
@@ -32,8 +32,8 @@ export interface TastingRecord {
   // メタデータ
   isPublic: boolean
   citations?: Citation[] // 過去記録からの引用
-  imageUrls: string[]
-  tags: string[]
+  images?: string[] // imageUrlsをimagesに変更
+  tags?: string[]
   
   createdAt: Date
   updatedAt: Date
@@ -42,60 +42,60 @@ export interface TastingRecord {
 // 詳細分析データ
 export interface DetailedAnalysis {
   // 外観分析
-  appearance: {
-    intensity: number // 1-5
-    transparency: number // 1-5
-    viscosity: number // 1-5
-    color: string
+  appearance?: {
+    clarity?: string
+    intensity?: string
+    transparency?: number // 1-5
+    viscosity?: number // 1-5
+    color?: string
     colorNotes?: string
   }
   
   // 香り分析
-  aroma: {
-    firstImpression: string
-    afterSwirling: string
-    intensity: number // 1-5
-    categories: {
-      fruits: string[]
-      florals: string[]
-      spices: string[]
-      earthy: string[]
-      oaky: string[]
-      other: string[]
+  aroma?: {
+    firstImpression?: string
+    afterSwirling?: string
+    intensity?: number // 1-10
+    complexity?: number // 1-10
+    categories?: {
+      fruits?: string[]
+      florals?: string[]
+      spices?: string[]
+      earthy?: string[]
+      oaky?: string[]
+      other?: string[]
     }
+    notes?: string
   }
   
   // 味わい分析
-  taste: {
-    attack: string
-    development: string
-    finish: string
-    finishLength: number // 1-5
-    balance: number // 1-5
-    complexity: number // 1-5
-  }
-  
-  // 構造分析
-  structure: {
-    sweetness: number // 1-5 (1=bone dry, 5=very sweet)
-    acidity: number // 1-5
-    tannin: number // 1-5 (赤ワインのみ)
-    alcohol: number // 1-5
-    body: number // 1-5 (1=light, 5=full)
+  taste?: {
+    attack?: string
+    development?: string
+    finish?: string
+    length?: number // finishLengthをlengthに変更
+    balance?: number // 1-10
+    complexity?: number // 1-10
+    sweetness?: number // 1-10
+    acidity?: number // 1-10
+    tannin?: number // 1-10
+    body?: number // 1-10
+    alcohol?: number // 1-10
   }
 }
 
 // テイスティング環境
 export interface TastingEnvironment {
-  glassType: GlassType
-  servingTemperature?: number
-  decanted: boolean
-  decantingTime?: number // 分
-  lighting: string
-  atmosphere: string
-  mood: string
+  glassType?: string
+  temperature?: number // servingTemperatureをtemperatureに変更
+  decanted?: boolean
+  decantTime?: number // decantingTimeをdecantTimeに変更
+  lighting?: string
+  atmosphere?: string
+  weather?: string
+  mood?: string
   companions?: string[]
-  food?: string[]
+  pairing?: string[] // foodをpairingに変更
   notes?: string
 }
 

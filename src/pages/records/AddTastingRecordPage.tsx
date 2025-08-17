@@ -4,14 +4,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import tastingRecordService from '../../services/tastingRecordService'
 import gamificationService from '../../services/gamificationService'
 import Button from '../../components/common/Button'
-import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import TagInput from '../../components/common/TagInput'
 import type { 
   TastingRecord, 
   DetailedAnalysis, 
   TastingEnvironment, 
-  GlassType,
   WineType,
   WineColor 
 } from '../../types'
@@ -56,7 +54,7 @@ export default function AddTastingRecordPage() {
     producer: '',
     region: '',
     country: '',
-    type: 'still',
+    type: 'red',
     color: 'red',
     tastingDate: new Date(),
     mode: 'quick',
@@ -115,7 +113,6 @@ export default function AddTastingRecordPage() {
     }
   })
 
-  const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showModeSelector, setShowModeSelector] = useState(true)
@@ -906,7 +903,7 @@ export default function AddTastingRecordPage() {
                       </div>
                     </div>
 
-                    {formData.color === 'red' && (
+                    {formData.type === 'red' && (
                       <div className="form-group">
                         <label htmlFor="structure-tannin">
                           タンニン (1-5)

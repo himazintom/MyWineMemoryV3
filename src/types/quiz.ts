@@ -18,6 +18,7 @@ export interface QuizQuestion {
   level?: number // レベル情報（必要に応じて追加）
   questionNumber?: number // 問題番号
   tags?: string[]
+  tips?: string // 解説のヒント
   imageUrl?: string
   estimatedTimeSeconds?: number
   createdAt?: Date
@@ -61,6 +62,7 @@ export interface QuizProgress {
   
   // 状態
   isUnlocked: boolean
+  isCompleted?: boolean
   completedAt?: Date
   lastPlayedAt: Date
   
@@ -118,6 +120,7 @@ export interface UserQuizStats {
   totalCorrectAnswers: number
   overallAccuracy: number // 0-100
   totalTimeSpent: number // 秒
+  hearts: number // 現在のハート数
   
   // レベル別統計
   levelStats: Record<number, {

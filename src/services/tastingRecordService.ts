@@ -301,65 +301,6 @@ class TastingRecordService {
   // 統計・分析機能
   // ===============================
 
-  /**
-   * 人気ワイン取得（記録数上位）
-   */
-  async getPopularWines(userId: string, limitCount: number = 10): Promise<{
-    wineName: string
-    producer: string
-    country: string
-    region: string
-    recordCount: number
-    averageRating: number
-    lastTasted: Date
-  }[]> {
-    try {
-      // まずユーザーの全記録を取得
-      const { records } = await this.getUserRecords(userId, { limitCount: 1000 })
-
-      // ワイン別にグループ化
-      const wineGroups = new Map<string, {
-        wineName: string
-        producer: string
-        country: string
-        region: string
-        records: TastingRecord[]
-      }>()
-
-      records.forEach(record => {
-        const key = `${record.wineName}-${record.producer}`
-        if (!wineGroups.has(key)) {
-          wineGroups.set(key, {
-            wineName: record.wineName,
-            producer: record.producer,
-            country: record.country,
-            region: record.region,
-            records: []
-          })
-        }
-        wineGroups.get(key)!.records.push(record)
-      })
-
-      // 統計計算とソート
-      const wineStats = Array.from(wineGroups.values())
-        .map(group => ({
-          wineName: group.wineName,
-          producer: group.producer,
-          country: group.country,
-          region: group.region,
-          recordCount: group.records.length,
-          averageRating: group.records.reduce((sum, r) => sum + r.rating, 0) / group.records.length,
-          lastTasted: new Date(Math.max(...group.records.map(r => r.tastingDate.getTime())))
-        }))
-        .sort((a, b) => b.recordCount - a.recordCount)
-        .slice(0, limitCount)
-
-      return wineStats
-    } catch (error) {
-      console.error('Failed to get popular wines:', error)
-      throw new Error(`人気ワインの取得に失敗しました: ${error}`)
-    }
-  }
 
   /**
    * ユーザーのテイスティング統計
@@ -693,6 +634,165 @@ class TastingRecordService {
     } catch (error) {
       console.error('Failed to search wines:', error)
       throw new Error(`ワイン検索に失敗しました: ${error}`)
+    }
+  }
+
+  /**
+   * ユーザー統計情報を取得
+   */
+  async getUserStats(userId: string): Promise<{
+    totalRecords: number
+    averageRating: number
+    favoriteCountries: Array<{ country: string; count: number }>
+    favoriteTypes: Array<{ type: string; count: number }>
+    monthlyRecords: Array<{ month: string; count: number }>
+    ratingDistribution: Array<{ range: string; count: number }>
+    priceDistribution: Array<{ range: string; count: number; avgRating: number }>
+    recentActivity: Array<{ date: string; count: number }>
+  }> {
+    try {
+      const { records } = await this.getUserRecords(userId)
+      
+      if (records.length === 0) {
+        return {
+          totalRecords: 0,
+          averageRating: 0,
+          favoriteCountries: [],
+          favoriteTypes: [],
+          monthlyRecords: [],
+          ratingDistribution: [],
+          priceDistribution: [],
+          recentActivity: []
+        }
+      }
+
+      // 基本統計
+      const totalRecords = records.length
+      const averageRating = records.reduce((sum, record) => sum + record.rating, 0) / totalRecords
+
+      // 国別統計
+      const countryMap = new Map<string, number>()
+      records.forEach(record => {
+        if (record.country) {
+          const count = countryMap.get(record.country) || 0
+          countryMap.set(record.country, count + 1)
+        }
+      })
+      const favoriteCountries = Array.from(countryMap.entries())
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+
+      // タイプ別統計
+      const typeMap = new Map<string, number>()
+      records.forEach(record => {
+        const count = typeMap.get(record.type) || 0
+        typeMap.set(record.type, count + 1)
+      })
+      const favoriteTypes = Array.from(typeMap.entries())
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count)
+
+      // 月別記録数（過去12ヶ月）
+      const monthlyMap = new Map<string, number>()
+      const now = new Date()
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
+        monthlyMap.set(key, 0)
+      }
+      
+      records.forEach(record => {
+        const date = new Date(record.tastingDate)
+        const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
+        if (monthlyMap.has(key)) {
+          monthlyMap.set(key, (monthlyMap.get(key) || 0) + 1)
+        }
+      })
+      
+      const monthlyRecords = Array.from(monthlyMap.entries())
+        .map(([month, count]) => ({ month, count }))
+
+      // 評価分布
+      const ratingRanges = [
+        { range: '9.0-10.0', min: 9.0, max: 10.0 },
+        { range: '8.0-8.9', min: 8.0, max: 8.9 },
+        { range: '7.0-7.9', min: 7.0, max: 7.9 },
+        { range: '6.0-6.9', min: 6.0, max: 6.9 },
+        { range: '5.0-5.9', min: 5.0, max: 5.9 },
+        { range: '0.0-4.9', min: 0.0, max: 4.9 }
+      ]
+      
+      const ratingDistribution = ratingRanges.map(({ range, min, max }) => ({
+        range,
+        count: records.filter(record => record.rating >= min && record.rating <= max).length
+      }))
+
+      // 価格帯別分析
+      const priceRanges = [
+        { range: '10,000円以上', min: 10000, max: Infinity },
+        { range: '5,000-9,999円', min: 5000, max: 9999 },
+        { range: '3,000-4,999円', min: 3000, max: 4999 },
+        { range: '1,000-2,999円', min: 1000, max: 2999 },
+        { range: '1,000円未満', min: 0, max: 999 },
+        { range: '価格不明', min: null, max: null }
+      ]
+      
+      const priceDistribution = priceRanges.map(({ range, min, max }) => {
+        const recordsInRange = records.filter(record => {
+          if (min === null) return !record.price
+          if (max === Infinity) return record.price && record.price >= min
+          return record.price && record.price >= min && record.price <= max
+        })
+        
+        const avgRating = recordsInRange.length > 0 
+          ? recordsInRange.reduce((sum, record) => sum + record.rating, 0) / recordsInRange.length
+          : 0
+        
+        return {
+          range,
+          count: recordsInRange.length,
+          avgRating
+        }
+      })
+
+      // 最近のアクティビティ（過去30日）
+      const activityMap = new Map<string, number>()
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(thirtyDaysAgo)
+        date.setDate(date.getDate() + i)
+        const key = date.toISOString().split('T')[0]
+        activityMap.set(key, 0)
+      }
+      
+      records
+        .filter(record => record.tastingDate >= thirtyDaysAgo)
+        .forEach(record => {
+          const key = record.tastingDate.toISOString().split('T')[0]
+          if (activityMap.has(key)) {
+            activityMap.set(key, (activityMap.get(key) || 0) + 1)
+          }
+        })
+      
+      const recentActivity = Array.from(activityMap.entries())
+        .map(([date, count]) => ({ date, count }))
+
+      return {
+        totalRecords,
+        averageRating,
+        favoriteCountries,
+        favoriteTypes,
+        monthlyRecords,
+        ratingDistribution,
+        priceDistribution,
+        recentActivity
+      }
+    } catch (error) {
+      console.error('Failed to get user stats:', error)
+      throw new Error(`ユーザー統計の取得に失敗しました: ${error}`)
     }
   }
 }

@@ -18,8 +18,6 @@ export type {
   PopularWine 
 } from './wine'
 
-export { WineType, WineColor } from './wine'
-
 // テイスティング記録関連
 export type {
   TastingRecord,
@@ -31,8 +29,6 @@ export type {
   GlassType
 } from './tasting'
 
-export { GlassType } from './tasting'
-
 // クイズ関連
 export type {
   QuizQuestion,
@@ -42,8 +38,6 @@ export type {
   UserQuizStats,
   QuizCategory
 } from './quiz'
-
-export { QuizCategory } from './quiz'
 
 // デイリークイズ関連
 export type {
@@ -56,8 +50,6 @@ export type {
   WineQuizCategory
 } from './daily-quiz'
 
-export { WineQuizCategory } from './daily-quiz'
-
 // ゲーミフィケーション関連
 export type {
   UserXP,
@@ -69,14 +61,6 @@ export type {
   DailyGoal,
   UserStreak,
   ActivityRecord,
-  XPSource,
-  BadgeCategory,
-  BadgeRarity,
-  RequirementType,
-  ActivityType
-} from './gamification'
-
-export { 
   XPSource,
   BadgeCategory,
   BadgeRarity,

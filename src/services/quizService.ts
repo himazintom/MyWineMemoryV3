@@ -547,6 +547,73 @@ class QuizService {
   }
 
   // ===============================
+  // 追加メソッド
+  // ===============================
+
+  /**
+   * ハート数をチェック
+   */
+  async checkHearts(userId: string): Promise<number> {
+    try {
+      const stats = await this.getUserStats(userId)
+      return stats?.hearts || 5
+    } catch (error) {
+      console.error('Failed to check hearts:', error)
+      return 5
+    }
+  }
+
+  /**
+   * 進捗取得（エイリアス）
+   */
+  async getProgress(userId: string, level: number): Promise<QuizProgress | null> {
+    return this.getUserProgress(userId, level)
+  }
+
+  /**
+   * レベルアンロック状態確認
+   */
+  async isLevelUnlocked(userId: string, level: number): Promise<boolean> {
+    if (level === 1) return true
+    
+    try {
+      const previousProgress = await this.getUserProgress(userId, level - 1)
+      return previousProgress?.isCompleted || false
+    } catch (error) {
+      console.error('Failed to check level unlock:', error)
+      return false
+    }
+  }
+
+  /**
+   * レベル別問題取得（エイリアス）
+   */
+  async getQuestionsByLevel(level: number, count: number = 10): Promise<QuizQuestion[]> {
+    return this.getRandomQuestions(level, count)
+  }
+
+  /**
+   * セッション開始（エイリアス）
+   */
+  async startSession(userId: string, level: number, questions: QuizQuestion[]): Promise<string> {
+    return this.startQuizSession(userId, level, questions)
+  }
+
+  /**
+   * セッション完了（エイリアス）
+   */
+  async completeSession(sessionId: string, results: any): Promise<void> {
+    return this.completeQuizSession(sessionId, results)
+  }
+
+  /**
+   * ハート消費（エイリアス）
+   */
+  async consumeHearts(userId: string, amount: number): Promise<void> {
+    return this.consumeHeart(userId, amount)
+  }
+
+  // ===============================
   // キャッシュ管理
   // ===============================
 

@@ -52,7 +52,7 @@ export default function RecordsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const userRecords = await tastingRecordService.getUserRecords(userProfile.uid)
+        const { records: userRecords } = await tastingRecordService.getUserRecords(userProfile.uid)
         setRecords(userRecords)
       } catch (err) {
         console.error('Failed to load records:', err)
