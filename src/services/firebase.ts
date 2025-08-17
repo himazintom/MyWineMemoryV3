@@ -130,6 +130,20 @@ class FirebaseService {
     return this.storage
   }
   
+  /**
+   * Firebaseアプリインスタンスの取得
+   */
+  public getApp(): FirebaseApp {
+    return this.app
+  }
+  
+  /**
+   * 現在の認証ユーザーの取得
+   */
+  public getCurrentUser(): FirebaseUser | null {
+    return this.auth.currentUser
+  }
+  
   // ===============================
   // 認証関連メソッド
   // ===============================
@@ -198,12 +212,6 @@ class FirebaseService {
     return onAuthStateChanged(this.auth, callback)
   }
   
-  /**
-   * 現在のユーザーを取得
-   */
-  getCurrentUser(): FirebaseUser | null {
-    return this.auth.currentUser
-  }
   
   // ===============================
   // Firestore関連メソッド

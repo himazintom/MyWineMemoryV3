@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { User as FirebaseUser } from 'firebase/auth'
 import type { User } from '../types/user'
 import firebaseService from '../services/firebase'
+import { notificationService } from '../services/notificationService'
 
 interface AuthContextType {
   // 認証状態
@@ -124,6 +125,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // 新しいsyncUserProfile機能を使用
       const profile = await firebaseService.syncUserProfile(firebaseUser)
       setUserProfile(profile)
+      
+      // 通知サービスを初期化
+      await notificationService.initialize(firebaseUser.uid)
     } catch (err) {
       console.error('Failed to handle user sign in:', err)
       throw err

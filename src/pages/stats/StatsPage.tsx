@@ -4,6 +4,7 @@ import tastingRecordService from '../../services/tastingRecordService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import StatsCharts from '../../components/stats/StatsCharts'
+import { AIAnalysis } from '../../components/AIAnalysis'
 
 interface UserStats {
   totalRecords: number
@@ -191,6 +192,11 @@ export default function StatsPage() {
                 ))}
             </div>
           </div>
+        </div>
+
+        {/* AI分析セクション */}
+        <div className="ai-section">
+          <AIAnalysis />
         </div>
 
         {/* チャート表示 */}
