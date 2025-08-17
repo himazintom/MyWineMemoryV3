@@ -114,18 +114,15 @@ export interface TastingEnvironment {
 }
 
 // グラスタイプ
-export const GlassType = {
-  BORDEAUX: 'bordeaux',
-  BURGUNDY: 'burgundy', 
-  CHARDONNAY: 'chardonnay',
-  SAUVIGNON_BLANC: 'sauvignon_blanc',
-  RIESLING: 'riesling',
-  CHAMPAGNE_FLUTE: 'champagne_flute',
-  CHAMPAGNE_COUPE: 'champagne_coupe',
-  UNIVERSAL: 'universal'
-} as const
-
-export type GlassType = typeof GlassType[keyof typeof GlassType]
+export type GlassType = 
+  | 'universal'
+  | 'bordeaux'
+  | 'burgundy'
+  | 'champagne_flute'
+  | 'white_wine'
+  | 'spirits_snifter'
+  | 'dessert_wine'
+  | 'water_tumbler'
 
 // 引用情報
 export interface Citation {

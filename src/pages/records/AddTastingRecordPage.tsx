@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useError } from '../../contexts/ErrorContext'
 import tastingRecordService from '../../services/tastingRecordService'
 import gamificationService from '../../services/gamificationService'
+import imageUploadService from '../../services/imageUploadService'
 import Button from '../../components/common/Button'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import TagInput from '../../components/common/TagInput'
+import ImageUpload from '../../components/common/ImageUpload'
+import DrawingCanvas from '../../components/features/DrawingCanvas'
+import CitationSelector from '../../components/features/CitationSelector'
 import type { 
   TastingRecord, 
   DetailedAnalysis, 
   TastingEnvironment, 
   WineType,
-  WineColor 
+  WineColor,
+  PopularWine,
+  GlassType,
+  Citation
 } from '../../types'
 
 interface TastingFormData {
@@ -23,6 +31,7 @@ interface TastingFormData {
   country: string
   type: WineType
   color: WineColor
+  grapes: string[]
   alcoholContent?: number
   price?: number
   
@@ -41,6 +50,31 @@ interface TastingFormData {
   // メタデータ
   isPublic: boolean
   tags: string[]
+  images: string[]
+  drawingData?: string
+  citations: Citation[]
+}
+
+// グラスタイプの選択肢
+const GLASS_TYPES: { value: GlassType; label: string; icon: string }[] = [
+  { value: 'universal', label: 'ユニバーサル', icon: '🍷' },
+  { value: 'bordeaux', label: 'ボルドー', icon: '🍷' },
+  { value: 'burgundy', label: 'ブルゴーニュ', icon: '🍷' },
+  { value: 'champagne_flute', label: 'シャンパン', icon: '🥂' },
+  { value: 'white_wine', label: '白ワイン', icon: '🥂' },
+  { value: 'dessert_wine', label: 'デザートワイン', icon: '🥃' },
+  { value: 'spirits_snifter', label: 'スピリッツ', icon: '🥃' },
+  { value: 'water_tumbler', label: 'タンブラー', icon: '🥤' }
+]
+
+// 香りカテゴリー
+const AROMA_CATEGORIES = {
+  fruits: ['レモン', 'グレープフルーツ', 'リンゴ', '洋梨', '桃', 'アプリコット', 'チェリー', 'ストロベリー', 'ブラックベリー', 'カシス'],
+  florals: ['スミレ', 'バラ', 'ジャスミン', 'オレンジの花', 'アカシア', 'エルダーフラワー'],
+  spices: ['黒胡椒', '白胡椒', 'シナモン', 'クローブ', 'ナツメグ', 'バニラ', 'リコリス'],
+  earthy: ['土', '枯葉', 'きのこ', 'トリュフ', '森林', '湿った土'],
+  oaky: ['オーク', 'スモーク', 'トースト', 'キャラメル', 'チョコレート', 'コーヒー'],
+  other: ['ミネラル', '石灰', '火打石', 'ゴム', 'ペトロール', '硫黄']
 }
 
 export default function AddTastingRecordPage() {
@@ -48,6 +82,7 @@ export default function AddTastingRecordPage() {
   const location = useLocation()
   const { wineId } = useParams()
   const { userProfile } = useAuth()
+  const { handleError } = useError()
   
   const [formData, setFormData] = useState<TastingFormData>({
     wineName: '',
@@ -56,12 +91,14 @@ export default function AddTastingRecordPage() {
     country: '',
     type: 'red',
     color: 'medium',
+    grapes: [],
     tastingDate: new Date(),
     mode: 'quick',
     rating: 5,
     quickNotes: '',
     isPublic: false,
     tags: [],
+    images: [],
     detailedAnalysis: {
       appearance: {
         intensity: 3,
@@ -110,16 +147,20 @@ export default function AddTastingRecordPage() {
       companions: [],
       food: [],
       notes: ''
-    }
+    },
+    citations: []
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showModeSelector, setShowModeSelector] = useState(true)
+  const [activeTab, setActiveTab] = useState<'basic' | 'detailed' | 'environment' | 'media'>('basic')
+  const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
+  const [showCitationSelector, setShowCitationSelector] = useState(false)
 
-  // Get wine info from SelectWine page if available
+  // ワイン情報を取得（SelectWineページから）
   useEffect(() => {
-    const selectedWine = location.state?.selectedWine
+    const selectedWine = location.state?.selectedWine as PopularWine
     if (selectedWine) {
       setFormData(prev => ({
         ...prev,
@@ -127,8 +168,8 @@ export default function AddTastingRecordPage() {
         producer: selectedWine.producer || '',
         country: selectedWine.country || '',
         region: selectedWine.region || '',
-        type: selectedWine.type || 'still',
-        color: selectedWine.color || 'red',
+        type: selectedWine.type || 'red',
+        color: selectedWine.color || 'medium',
         vintage: selectedWine.vintage,
         alcoholContent: selectedWine.alcoholContent,
         price: selectedWine.price
@@ -146,13 +187,17 @@ export default function AddTastingRecordPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleDetailedAnalysisChange = (section: keyof DetailedAnalysis, field: string, value: any) => {
+  const handleDetailedAnalysisChange = (
+    section: keyof DetailedAnalysis, 
+    field: string, 
+    value: any
+  ) => {
     setFormData(prev => ({
       ...prev,
       detailedAnalysis: {
         ...prev.detailedAnalysis!,
         [section]: {
-          ...prev.detailedAnalysis![section],
+          ...((prev.detailedAnalysis as any)[section] || {}),
           [field]: value
         }
       }
@@ -165,9 +210,9 @@ export default function AddTastingRecordPage() {
       detailedAnalysis: {
         ...prev.detailedAnalysis!,
         aroma: {
-          ...prev.detailedAnalysis?.aroma,
+          ...prev.detailedAnalysis?.aroma!,
           categories: {
-            ...prev.detailedAnalysis?.aroma?.categories,
+            ...prev.detailedAnalysis?.aroma?.categories!,
             [category]: values
           }
         }
@@ -185,7 +230,23 @@ export default function AddTastingRecordPage() {
     }))
   }
 
-  const handleQuickSubmit = async (e: React.FormEvent) => {
+  const handleImageUpload = (results: any[]) => {
+    const urls = results.map(r => r.url)
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, ...urls]
+    }))
+  }
+
+  const handleDrawingSave = (dataUrl: string) => {
+    setFormData(prev => ({
+      ...prev,
+      drawingData: dataUrl
+    }))
+    setShowDrawingCanvas(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!userProfile) {
@@ -202,6 +263,24 @@ export default function AddTastingRecordPage() {
       setIsSubmitting(true)
       setError(null)
 
+      // 描画データを画像としてアップロード
+      let drawingUrl: string | undefined
+      if (formData.drawingData) {
+        try {
+          const blob = await fetch(formData.drawingData).then(r => r.blob())
+          const file = new File([blob], 'drawing.png', { type: 'image/png' })
+          const result = await imageUploadService.uploadImage(
+            file,
+            'drawing',
+            userProfile.uid,
+            `tasting/${Date.now()}`
+          )
+          drawingUrl = result.url
+        } catch (err) {
+          console.error('Failed to upload drawing:', err)
+        }
+      }
+
       const recordData: Omit<TastingRecord, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
         wineId,
         wineName: formData.wineName,
@@ -211,6 +290,7 @@ export default function AddTastingRecordPage() {
         country: formData.country,
         type: formData.type,
         color: formData.color,
+        grapes: formData.grapes,
         alcoholContent: formData.alcoholContent,
         price: formData.price,
         tastingDate: formData.tastingDate,
@@ -220,14 +300,15 @@ export default function AddTastingRecordPage() {
         detailedAnalysis: formData.mode === 'detailed' ? formData.detailedAnalysis : undefined,
         environment: formData.mode === 'detailed' ? formData.environment : undefined,
         isPublic: formData.isPublic,
-        images: [],
-        tags: formData.tags
+        images: [...formData.images, ...(drawingUrl ? [drawingUrl] : [])],
+        tags: formData.tags,
+        citations: formData.citations
       }
 
-      // Save record
+      // 記録を保存
       const newRecord = await tastingRecordService.createRecord(userProfile.uid, recordData)
 
-      // Award XP for creating a record
+      // XP付与
       const xpAmount = formData.mode === 'detailed' ? 20 : 10
       await gamificationService.awardXP(
         userProfile.uid,
@@ -237,10 +318,8 @@ export default function AddTastingRecordPage() {
         newRecord.id
       )
 
-      // Update daily goals
+      // デイリー目標とストリーク更新
       await gamificationService.updateGoalProgress(userProfile.uid, 'tasting', 1)
-
-      // Update streak
       await gamificationService.updateStreak(userProfile.uid, 'tasting')
 
       navigate('/records', { 
@@ -250,11 +329,23 @@ export default function AddTastingRecordPage() {
         }
       })
     } catch (err) {
-      console.error('Failed to save tasting record:', err)
-      setError('記録の保存に失敗しました。もう一度お試しください。')
+      const appError = handleError(err, { 
+        operation: 'createTastingRecord',
+        wineName: formData.wineName 
+      })
+      setError(appError.userMessage)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleCitationSelect = (citations: Citation[], fieldsData: Partial<TastingRecord>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...(fieldsData as Partial<TastingFormData>),
+      citations: [...prev.citations, ...citations]
+    }))
+    setShowCitationSelector(false)
   }
 
   const handleSelectWine = () => {
@@ -274,6 +365,7 @@ export default function AddTastingRecordPage() {
     )
   }
 
+  // モード選択画面
   if (showModeSelector) {
     return (
       <div className="add-tasting-record-page">
@@ -301,21 +393,20 @@ export default function AddTastingRecordPage() {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
                   handleModeSelect('quick')
                 }
               }}
             >
               <div className="mode-icon">⚡</div>
               <h3>クイックモード</h3>
-              <p>簡単・素早く記録</p>
-              <ul>
-                <li>基本情報 + 評価</li>
-                <li>簡単なメモ</li>
-                <li>約2分で完了</li>
-                <li>10 XP獲得</li>
+              <p className="mode-info">基本情報と評価のみ</p>
+              <ul className="mode-features">
+                <li>ワイン基本情報</li>
+                <li>評価（0-10点）</li>
+                <li>クイックメモ</li>
+                <li>タグ付け</li>
               </ul>
-              <div className="mode-badge">推奨</div>
+              <div className="mode-xp">+10 XP</div>
             </div>
 
             <div 
@@ -325,21 +416,20 @@ export default function AddTastingRecordPage() {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
                   handleModeSelect('detailed')
                 }
               }}
             >
-              <div className="mode-icon">🔬</div>
+              <div className="mode-icon">📊</div>
               <h3>詳細モード</h3>
-              <p>本格的なテイスティングノート</p>
-              <ul>
+              <p className="mode-info">プロフェッショナル分析</p>
+              <ul className="mode-features">
                 <li>外観・香り・味わい分析</li>
-                <li>構造分析</li>
+                <li>構造要素評価</li>
                 <li>環境記録</li>
-                <li>20 XP獲得</li>
+                <li>画像・描画記録</li>
               </ul>
-              <div className="mode-badge pro">プロ</div>
+              <div className="mode-xp">+20 XP</div>
             </div>
           </div>
         </div>
@@ -347,157 +437,584 @@ export default function AddTastingRecordPage() {
     )
   }
 
+  // メインフォーム
   return (
     <div className="add-tasting-record-page">
       <div className="page-header">
         <h1>
-          {formData.mode === 'quick' ? 'クイック記録' : '詳細テイスティング記録'}
+          テイスティング記録作成
+          <span className="mode-badge">{formData.mode === 'quick' ? 'クイック' : '詳細'}</span>
         </h1>
-        <div className="header-actions">
-          <Button
-            variant="text"
-            onClick={() => setShowModeSelector(true)}
-          >
-            モード変更
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate(-1)}
-          >
-            戻る
-          </Button>
-        </div>
+        <Button
+          variant="secondary"
+          onClick={() => navigate(-1)}
+        >
+          戻る
+        </Button>
       </div>
 
-      {error && (
-        <ErrorMessage 
-          message={error} 
-          onDismiss={() => setError(null)}
-        />
-      )}
+      {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
 
-      <form onSubmit={handleQuickSubmit} className="tasting-record-form">
-        {/* Wine Selection Section */}
-        <div className="form-section">
-          <div className="section-header">
-            <h2>ワイン選択</h2>
+      <form onSubmit={handleSubmit} className="tasting-form">
+        {/* タブナビゲーション（詳細モードのみ） */}
+        {formData.mode === 'detailed' && (
+          <div className="tab-navigation">
+            <button
+              type="button"
+              className={`tab-button ${activeTab === 'basic' ? 'active' : ''}`}
+              onClick={() => setActiveTab('basic')}
+            >
+              基本情報
+            </button>
+            <button
+              type="button"
+              className={`tab-button ${activeTab === 'detailed' ? 'active' : ''}`}
+              onClick={() => setActiveTab('detailed')}
+            >
+              詳細分析
+            </button>
+            <button
+              type="button"
+              className={`tab-button ${activeTab === 'environment' ? 'active' : ''}`}
+              onClick={() => setActiveTab('environment')}
+            >
+              環境
+            </button>
+            <button
+              type="button"
+              className={`tab-button ${activeTab === 'media' ? 'active' : ''}`}
+              onClick={() => setActiveTab('media')}
+            >
+              画像・描画
+            </button>
+          </div>
+        )}
+
+        {/* 基本情報タブ */}
+        {(formData.mode === 'quick' || activeTab === 'basic') && (
+          <div className="form-section">
+            <h2>ワイン情報</h2>
+            
+            {/* ワイン選択/変更 */}
+            {formData.wineName && (
+              <div className="selected-wine-info">
+                <div className="wine-summary">
+                  <h3>{formData.wineName}</h3>
+                  <p>{formData.producer}</p>
+                  {formData.country && <p>{formData.country} {formData.region}</p>}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSelectWine}
+                >
+                  変更
+                </Button>
+              </div>
+            )}
+
             {!formData.wineName && (
               <Button
                 type="button"
                 variant="primary"
                 onClick={handleSelectWine}
+                className="select-wine-button"
               >
                 ワインを選択
               </Button>
             )}
-          </div>
 
-          {formData.wineName ? (
-            <div className="selected-wine-info">
-              <div className="wine-summary">
-                <h3>{formData.wineName}</h3>
-                <p>{formData.producer}</p>
-                {(formData.country || formData.region) && (
-                  <p className="wine-origin">
-                    {formData.country}{formData.region && `, ${formData.region}`}
-                  </p>
-                )}
-                {formData.vintage && (
-                  <p className="wine-vintage">{formData.vintage}</p>
-                )}
-              </div>
-              <Button
-                type="button"
-                variant="text"
-                onClick={handleSelectWine}
-                className="change-wine-btn"
-              >
-                変更
-              </Button>
-            </div>
-          ) : (
-            <div className="wine-selection-prompt">
-              <p>まずはテイスティングするワインを選択してください</p>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleSelectWine}
-              >
-                ワインを選択
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Basic Tasting Info - Only show if wine is selected */}
-        {formData.wineName && (
-          <>
-            <div className="form-section">
-              <h2>基本テイスティング情報</h2>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="tasting-date">テイスティング日</label>
-                  <input
-                    id="tasting-date"
-                    type="date"
-                    value={formData.tastingDate.toISOString().split('T')[0]}
-                    onChange={(e) => handleBasicInfoChange('tastingDate', new Date(e.target.value))}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="rating">
-                    総合評価 <span className="required-asterisk">*</span>
-                  </label>
-                  <div className="rating-input-container">
-                    <input
-                      id="rating"
-                      type="range"
-                      min="0"
-                      max="10"
-                      step="0.5"
-                      value={formData.rating}
-                      onChange={(e) => handleBasicInfoChange('rating', parseFloat(e.target.value))}
-                      className="rating-slider"
-                    />
-                    <div className="rating-display">
-                      <span className="rating-value">{formData.rating.toFixed(1)}</span>
-                      <span className="rating-label">
-                        {formData.rating >= 9 ? '卓越' :
-                         formData.rating >= 8 ? '優秀' :
-                         formData.rating >= 7 ? '良い' :
-                         formData.rating >= 6 ? '普通' :
-                         formData.rating >= 5 ? 'まあまあ' : '期待以下'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+            <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="quick-notes">
-                  テイスティングノート
-                  {formData.mode === 'quick' && <span className="required-asterisk">*</span>}
+                <label htmlFor="wine-name">
+                  ワイン名 <span className="required">*</span>
                 </label>
-                <textarea
-                  id="quick-notes"
-                  value={formData.quickNotes}
-                  onChange={(e) => handleBasicInfoChange('quickNotes', e.target.value)}
-                  placeholder="このワインの印象、味わい、香りなどを自由に記録してください..."
-                  rows={formData.mode === 'quick' ? 6 : 3}
-                  required={formData.mode === 'quick'}
+                <input
+                  id="wine-name"
+                  type="text"
+                  value={formData.wineName}
+                  onChange={(e) => handleBasicInfoChange('wineName', e.target.value)}
+                  required
+                  placeholder="シャトー・マルゴー"
                 />
               </div>
 
               <div className="form-group">
-                <TagInput
-                  label="タグ"
-                  tags={formData.tags}
-                  onChange={(tags) => handleBasicInfoChange('tags', tags)}
-                  placeholder="味わいの特徴、シーンなどのタグを追加"
-                  maxTags={10}
+                <label htmlFor="producer">
+                  生産者 <span className="required">*</span>
+                </label>
+                <input
+                  id="producer"
+                  type="text"
+                  value={formData.producer}
+                  onChange={(e) => handleBasicInfoChange('producer', e.target.value)}
+                  required
+                  placeholder="シャトー・マルゴー"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="vintage">ヴィンテージ</label>
+                <input
+                  id="vintage"
+                  type="number"
+                  value={formData.vintage || ''}
+                  onChange={(e) => handleBasicInfoChange('vintage', e.target.value ? parseInt(e.target.value) : undefined)}
+                  min="1800"
+                  max={new Date().getFullYear()}
+                  placeholder="2020"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="country">国</label>
+                <input
+                  id="country"
+                  type="text"
+                  value={formData.country}
+                  onChange={(e) => handleBasicInfoChange('country', e.target.value)}
+                  placeholder="フランス"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="region">地域</label>
+                <input
+                  id="region"
+                  type="text"
+                  value={formData.region}
+                  onChange={(e) => handleBasicInfoChange('region', e.target.value)}
+                  placeholder="ボルドー"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="wine-type">タイプ</label>
+                <select
+                  id="wine-type"
+                  value={formData.type}
+                  onChange={(e) => handleBasicInfoChange('type', e.target.value as WineType)}
+                >
+                  <option value="red">赤ワイン</option>
+                  <option value="white">白ワイン</option>
+                  <option value="rose">ロゼワイン</option>
+                  <option value="sparkling">スパークリングワイン</option>
+                  <option value="fortified">酒精強化ワイン</option>
+                  <option value="dessert">デザートワイン</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="wine-color">色調</label>
+                <select
+                  id="wine-color"
+                  value={formData.color}
+                  onChange={(e) => handleBasicInfoChange('color', e.target.value as WineColor)}
+                >
+                  <option value="light">淡い</option>
+                  <option value="medium">中程度</option>
+                  <option value="deep">濃い</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="alcohol">アルコール度数（%）</label>
+                <input
+                  id="alcohol"
+                  type="number"
+                  value={formData.alcoholContent || ''}
+                  onChange={(e) => handleBasicInfoChange('alcoholContent', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  min="0"
+                  max="50"
+                  step="0.5"
+                  placeholder="13.5"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="price">価格（円）</label>
+                <input
+                  id="price"
+                  type="number"
+                  value={formData.price || ''}
+                  onChange={(e) => handleBasicInfoChange('price', e.target.value ? parseInt(e.target.value) : undefined)}
+                  min="0"
+                  placeholder="5000"
+                />
+              </div>
+            </div>
+
+            <div className="form-group full-width">
+              <TagInput
+                label="ブドウ品種"
+                tags={formData.grapes}
+                onChange={(grapes) => handleBasicInfoChange('grapes', grapes)}
+                placeholder="品種を入力してEnterで追加"
+                maxTags={10}
+              />
+            </div>
+
+            <h2>テイスティング評価</h2>
+            
+            <div className="form-group">
+              <label htmlFor="rating">
+                評価（0.0 - 10.0）
+                <span className="rating-value">{formData.rating.toFixed(1)}</span>
+              </label>
+              <input
+                id="rating"
+                type="range"
+                min="0"
+                max="10"
+                step="0.5"
+                value={formData.rating}
+                onChange={(e) => handleBasicInfoChange('rating', parseFloat(e.target.value))}
+                className="rating-slider"
+              />
+              <div className="rating-marks">
+                <span>0</span>
+                <span>2.5</span>
+                <span>5</span>
+                <span>7.5</span>
+                <span>10</span>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="quick-notes">テイスティングメモ</label>
+              <textarea
+                id="quick-notes"
+                value={formData.quickNotes}
+                onChange={(e) => handleBasicInfoChange('quickNotes', e.target.value)}
+                rows={4}
+                placeholder="香り、味わい、印象などを自由に記録..."
+              />
+            </div>
+
+            <div className="form-group">
+              <TagInput
+                label="タグ"
+                tags={formData.tags}
+                onChange={(tags) => handleBasicInfoChange('tags', tags)}
+                placeholder="タグを入力してEnterで追加"
+                maxTags={10}
+              />
+            </div>
+
+            {/* 過去記録引用機能 */}
+            <div className="form-group">
+              <div className="citation-section">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowCitationSelector(true)}
+                  disabled={!formData.wineName || !formData.producer}
+                >
+                  📋 過去記録から引用
+                </Button>
+                {formData.citations.length > 0 && (
+                  <div className="citations-info">
+                    <small>{formData.citations.length}件の記録から引用済み</small>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => handleBasicInfoChange('isPublic', e.target.checked)}
+                />
+                この記録を公開する
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* 詳細分析タブ（詳細モードのみ） */}
+        {formData.mode === 'detailed' && activeTab === 'detailed' && (
+          <div className="form-section">
+            <h2>外観分析</h2>
+            <div className="analysis-grid">
+              <div className="form-group">
+                <label>強度（1-5）: {formData.detailedAnalysis?.appearance?.intensity}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.appearance?.intensity || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('appearance', 'intensity', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>透明度（1-5）: {formData.detailedAnalysis?.appearance?.transparency}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.appearance?.transparency || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('appearance', 'transparency', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>粘性（1-5）: {formData.detailedAnalysis?.appearance?.viscosity}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.appearance?.viscosity || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('appearance', 'viscosity', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group full-width">
+                <label>色調の詳細</label>
+                <input
+                  type="text"
+                  value={formData.detailedAnalysis?.appearance?.color || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('appearance', 'color', e.target.value)}
+                  placeholder="ガーネット、ルビー、紫がかった..."
+                />
+              </div>
+
+              <div className="form-group full-width">
+                <label>外観メモ</label>
+                <textarea
+                  value={formData.detailedAnalysis?.appearance?.colorNotes || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('appearance', 'colorNotes', e.target.value)}
+                  rows={2}
+                  placeholder="輝き、清澄度、その他の観察..."
+                />
+              </div>
+            </div>
+
+            <h2>香り分析</h2>
+            <div className="aroma-analysis">
+              <div className="form-group">
+                <label>第一印象</label>
+                <textarea
+                  value={formData.detailedAnalysis?.aroma?.firstImpression || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('aroma', 'firstImpression', e.target.value)}
+                  rows={2}
+                  placeholder="最初に感じた香りの印象..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>スワリング後</label>
+                <textarea
+                  value={formData.detailedAnalysis?.aroma?.afterSwirling || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('aroma', 'afterSwirling', e.target.value)}
+                  rows={2}
+                  placeholder="スワリング後の香りの変化..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>香りの強度（1-5）: {formData.detailedAnalysis?.aroma?.intensity}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.aroma?.intensity || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('aroma', 'intensity', parseInt(e.target.value))}
+                />
+              </div>
+
+              {/* 香りカテゴリー */}
+              {Object.entries(AROMA_CATEGORIES).map(([category, options]) => (
+                <div key={category} className="aroma-category">
+                  <h3>{category === 'fruits' ? 'フルーツ' :
+                      category === 'florals' ? 'フローラル' :
+                      category === 'spices' ? 'スパイス' :
+                      category === 'earthy' ? 'アーシー' :
+                      category === 'oaky' ? 'オーク' : 'その他'}</h3>
+                  <div className="aroma-options">
+                    {options.map(option => (
+                      <label key={option} className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={formData.detailedAnalysis?.aroma?.categories?.[category as keyof typeof AROMA_CATEGORIES]?.includes(option) || false}
+                          onChange={(e) => {
+                            const current = formData.detailedAnalysis?.aroma?.categories?.[category as keyof typeof AROMA_CATEGORIES] || []
+                            const updated = e.target.checked 
+                              ? [...current, option]
+                              : current.filter((o: string) => o !== option)
+                            handleAromaCategoryChange(category, updated)
+                          }}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <h2>味わい分析</h2>
+            <div className="taste-analysis">
+              <div className="form-group">
+                <label>アタック（第一印象）</label>
+                <textarea
+                  value={formData.detailedAnalysis?.taste?.attack || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'attack', e.target.value)}
+                  rows={2}
+                  placeholder="口に含んだ瞬間の印象..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>展開（中盤）</label>
+                <textarea
+                  value={formData.detailedAnalysis?.taste?.development || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'development', e.target.value)}
+                  rows={2}
+                  placeholder="味わいの広がりと変化..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>フィニッシュ（余韻）</label>
+                <textarea
+                  value={formData.detailedAnalysis?.taste?.finish || ''}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'finish', e.target.value)}
+                  rows={2}
+                  placeholder="飲み込んだ後の印象..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label>余韻の長さ（1-5）: {formData.detailedAnalysis?.taste?.finishLength}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.taste?.finishLength || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'finishLength', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>バランス（1-5）: {formData.detailedAnalysis?.taste?.balance}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.taste?.balance || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'balance', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>複雑性（1-5）: {formData.detailedAnalysis?.taste?.complexity}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.taste?.complexity || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('taste', 'complexity', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <h2>構造分析</h2>
+            <div className="structure-analysis">
+              <div className="form-group">
+                <label>甘味（1-5）: {formData.detailedAnalysis?.structure?.sweetness}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.structure?.sweetness || 1}
+                  onChange={(e) => handleDetailedAnalysisChange('structure', 'sweetness', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>酸味（1-5）: {formData.detailedAnalysis?.structure?.acidity}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.structure?.acidity || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('structure', 'acidity', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>タンニン（1-5）: {formData.detailedAnalysis?.structure?.tannin}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.structure?.tannin || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('structure', 'tannin', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>アルコール感（1-5）: {formData.detailedAnalysis?.structure?.alcohol}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.structure?.alcohol || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('structure', 'alcohol', parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>ボディ（1-5）: {formData.detailedAnalysis?.structure?.body}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.detailedAnalysis?.structure?.body || 3}
+                  onChange={(e) => handleDetailedAnalysisChange('structure', 'body', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 環境タブ（詳細モードのみ） */}
+        {formData.mode === 'detailed' && activeTab === 'environment' && (
+          <div className="form-section">
+            <h2>テイスティング環境</h2>
+            
+            <div className="glass-types">
+              <label>グラスタイプ</label>
+              <div className="glass-grid">
+                {GLASS_TYPES.map(glass => (
+                  <div
+                    key={glass.value}
+                    className={`glass-option ${formData.environment?.glassType === glass.value ? 'selected' : ''}`}
+                    onClick={() => handleEnvironmentChange('glassType', glass.value)}
+                  >
+                    <div className="glass-icon">{glass.icon}</div>
+                    <div className="glass-label">{glass.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label htmlFor="serving-temp">提供温度（℃）</label>
+                <input
+                  id="serving-temp"
+                  type="number"
+                  value={formData.environment?.servingTemperature || ''}
+                  onChange={(e) => handleEnvironmentChange('servingTemperature', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  min="-5"
+                  max="30"
+                  step="0.5"
+                  placeholder="16"
                 />
               </div>
 
@@ -505,648 +1022,181 @@ export default function AddTastingRecordPage() {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.isPublic}
-                    onChange={(e) => handleBasicInfoChange('isPublic', e.target.checked)}
+                    checked={formData.environment?.decanted || false}
+                    onChange={(e) => handleEnvironmentChange('decanted', e.target.checked)}
                   />
-                  この記録を公開する
+                  デカンタージュ済み
                 </label>
-                <p className="form-help">
-                  公開すると他のユーザーがあなたの記録を参考にできます
-                </p>
               </div>
-            </div>
 
-            {/* Detailed Analysis Section - Only in detailed mode */}
-            {formData.mode === 'detailed' && (
-              <>
-                {/* Appearance Analysis */}
-                <div className="form-section detailed-analysis" data-section="appearance">
-                  <h2>外観分析</h2>
-                  <p className="section-description">
-                    ワインの視覚的特徴を評価します
-                  </p>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="appearance-intensity">
-                        色の濃さ (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="appearance-intensity"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.appearance?.intensity || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('appearance', 'intensity', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>薄い</span>
-                          <span>濃い</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.intensity || 3}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="appearance-transparency">
-                        透明度 (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="appearance-transparency"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.appearance?.transparency || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('appearance', 'transparency', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>濁っている</span>
-                          <span>透明</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.transparency || 3}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="appearance-viscosity">
-                        粘性 (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="appearance-viscosity"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.appearance?.viscosity || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('appearance', 'viscosity', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>さらさら</span>
-                          <span>とろみ</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.viscosity || 3}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="appearance-color">色調</label>
-                      <input
-                        id="appearance-color"
-                        type="text"
-                        value={formData.detailedAnalysis?.appearance?.color || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('appearance', 'color', e.target.value)}
-                        placeholder="例: ガーネット、レモンイエロー、ピンクゴールド"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="appearance-notes">色に関する詳細ノート</label>
-                      <textarea
-                        id="appearance-notes"
-                        value={formData.detailedAnalysis?.appearance?.colorNotes || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('appearance', 'colorNotes', e.target.value)}
-                        placeholder="縁の色、グラデーション、経年変化など..."
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Aroma Analysis */}
-                <div className="form-section detailed-analysis" data-section="aroma">
-                  <h2>香り分析</h2>
-                  <p className="section-description">
-                    ワインの香りの特徴を詳細に記録します
-                  </p>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="aroma-intensity">
-                        香りの強さ (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="aroma-intensity"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.aroma?.intensity || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('aroma', 'intensity', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>弱い</span>
-                          <span>強い</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.aroma?.intensity || 3}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="aroma-first">第一印象</label>
-                      <textarea
-                        id="aroma-first"
-                        value={formData.detailedAnalysis?.aroma?.firstImpression || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('aroma', 'firstImpression', e.target.value)}
-                        placeholder="グラスに注いだ直後の香りの印象..."
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="aroma-swirling">スワリング後</label>
-                      <textarea
-                        id="aroma-swirling"
-                        value={formData.detailedAnalysis?.aroma?.afterSwirling || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('aroma', 'afterSwirling', e.target.value)}
-                        placeholder="グラスを回した後の香りの変化..."
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="aroma-categories">
-                    <h3>香りのカテゴリー</h3>
-                    <div className="category-grid">
-                      <div className="category-group">
-                        <TagInput
-                          label="果実系"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.fruits || []}
-                          onChange={(values) => handleAromaCategoryChange('fruits', values)}
-                          placeholder="ベリー、柑橘、トロピカル..."
-                          maxTags={8}
-                        />
-                      </div>
-
-                      <div className="category-group">
-                        <TagInput
-                          label="花・植物系"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.florals || []}
-                          onChange={(values) => handleAromaCategoryChange('florals', values)}
-                          placeholder="バラ、スミレ、ハーブ..."
-                          maxTags={8}
-                        />
-                      </div>
-
-                      <div className="category-group">
-                        <TagInput
-                          label="スパイス"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.spices || []}
-                          onChange={(values) => handleAromaCategoryChange('spices', values)}
-                          placeholder="胡椒、シナモン、バニラ..."
-                          maxTags={8}
-                        />
-                      </div>
-
-                      <div className="category-group">
-                        <TagInput
-                          label="土・鉱物系"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.earthy || []}
-                          onChange={(values) => handleAromaCategoryChange('earthy', values)}
-                          placeholder="土、石、ミネラル..."
-                          maxTags={8}
-                        />
-                      </div>
-
-                      <div className="category-group">
-                        <TagInput
-                          label="樽・木系"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.oaky || []}
-                          onChange={(values) => handleAromaCategoryChange('oaky', values)}
-                          placeholder="オーク、杉、煙..."
-                          maxTags={8}
-                        />
-                      </div>
-
-                      <div className="category-group">
-                        <TagInput
-                          label="その他"
-                          tags={formData.detailedAnalysis?.aroma?.categories?.other || []}
-                          onChange={(values) => handleAromaCategoryChange('other', values)}
-                          placeholder="革、タバコ、動物系..."
-                          maxTags={8}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Taste Analysis */}
-                <div className="form-section detailed-analysis" data-section="taste">
-                  <h2>味わい分析</h2>
-                  <p className="section-description">
-                    口に含んだ時の味わいの変化を記録します
-                  </p>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="taste-attack">アタック（第一印象）</label>
-                      <textarea
-                        id="taste-attack"
-                        value={formData.detailedAnalysis?.taste?.attack || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('taste', 'attack', e.target.value)}
-                        placeholder="口に含んだ瞬間の印象..."
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="taste-development">展開</label>
-                      <textarea
-                        id="taste-development"
-                        value={formData.detailedAnalysis?.taste?.development || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('taste', 'development', e.target.value)}
-                        placeholder="味わいの変化、中盤の印象..."
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="taste-finish">フィニッシュ</label>
-                      <textarea
-                        id="taste-finish"
-                        value={formData.detailedAnalysis?.taste?.finish || ''}
-                        onChange={(e) => handleDetailedAnalysisChange('taste', 'finish', e.target.value)}
-                        placeholder="余韻の特徴..."
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="taste-finish-length">
-                        余韻の長さ (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="taste-finish-length"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.taste?.finishLength || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('taste', 'finishLength', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>短い</span>
-                          <span>長い</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste?.finishLength || 3}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="taste-balance">
-                        バランス (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="taste-balance"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.taste?.balance || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('taste', 'balance', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>アンバランス</span>
-                          <span>完璧</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste?.balance || 3}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="taste-complexity">
-                        複雑さ (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="taste-complexity"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.taste?.complexity || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('taste', 'complexity', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>単純</span>
-                          <span>複雑</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste?.complexity || 3}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Structure Analysis */}
-                <div className="form-section detailed-analysis" data-section="structure">
-                  <h2>構造分析</h2>
-                  <p className="section-description">
-                    ワインの基本構造要素を評価します
-                  </p>
-
-                  <div className="structure-grid">
-                    <div className="form-group">
-                      <label htmlFor="structure-sweetness">
-                        甘味 (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="structure-sweetness"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.structure?.sweetness || 1}
-                          onChange={(e) => handleDetailedAnalysisChange('structure', 'sweetness', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>辛口</span>
-                          <span>甘口</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure?.sweetness || 1}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="structure-acidity">
-                        酸味 (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="structure-acidity"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.structure?.acidity || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('structure', 'acidity', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>低い</span>
-                          <span>高い</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure?.acidity || 3}</div>
-                      </div>
-                    </div>
-
-                    {formData.type === 'red' && (
-                      <div className="form-group">
-                        <label htmlFor="structure-tannin">
-                          タンニン (1-5)
-                        </label>
-                        <div className="slider-container">
-                          <input
-                            id="structure-tannin"
-                            type="range"
-                            min="1"
-                            max="5"
-                            step="1"
-                            value={formData.detailedAnalysis?.structure?.tannin || 3}
-                            onChange={(e) => handleDetailedAnalysisChange('structure', 'tannin', parseInt(e.target.value))}
-                          />
-                          <div className="slider-labels">
-                            <span>軽い</span>
-                            <span>強い</span>
-                          </div>
-                          <div className="slider-value">{formData.detailedAnalysis?.structure?.tannin || 3}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="form-group">
-                      <label htmlFor="structure-alcohol">
-                        アルコール感 (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="structure-alcohol"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.structure?.alcohol || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('structure', 'alcohol', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>軽い</span>
-                          <span>強い</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure?.alcohol || 3}</div>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="structure-body">
-                        ボディ (1-5)
-                      </label>
-                      <div className="slider-container">
-                        <input
-                          id="structure-body"
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          value={formData.detailedAnalysis?.structure?.body || 3}
-                          onChange={(e) => handleDetailedAnalysisChange('structure', 'body', parseInt(e.target.value))}
-                        />
-                        <div className="slider-labels">
-                          <span>ライト</span>
-                          <span>フル</span>
-                        </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure?.body || 3}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Environment Section - Only in detailed mode */}
-            {formData.mode === 'detailed' && (
-              <div className="form-section detailed-analysis" data-section="environment">
-                <h2>テイスティング環境</h2>
-                <p className="section-description">
-                  テイスティング時の環境やコンテキストを記録します
-                </p>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="env-glass">グラスタイプ</label>
-                    <select
-                      id="env-glass"
-                      value={formData.environment?.glassType || 'universal'}
-                      onChange={(e) => handleEnvironmentChange('glassType', e.target.value)}
-                    >
-                      <option value="universal">ユニバーサル</option>
-                      <option value="bordeaux">ボルドー</option>
-                      <option value="burgundy">ブルゴーニュ</option>
-                      <option value="chardonnay">シャルドネ</option>
-                      <option value="sauvignon_blanc">ソーヴィニヨン・ブラン</option>
-                      <option value="riesling">リースリング</option>
-                      <option value="champagne_flute">シャンパンフルート</option>
-                      <option value="champagne_coupe">シャンパンクープ</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="env-temperature">サービス温度 (°C)</label>
-                    <input
-                      id="env-temperature"
-                      type="number"
-                      min="0"
-                      max="25"
-                      step="0.5"
-                      value={formData.environment?.servingTemperature || ''}
-                      onChange={(e) => handleEnvironmentChange('servingTemperature', e.target.value ? parseFloat(e.target.value) : undefined)}
-                      placeholder="例: 16.5"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={formData.environment?.decanted || false}
-                        onChange={(e) => handleEnvironmentChange('decanted', e.target.checked)}
-                      />
-                      デキャンタージュした
-                    </label>
-                  </div>
-
-                  {formData.environment?.decanted && (
-                    <div className="form-group">
-                      <label htmlFor="env-decanting-time">デキャンタージュ時間 (分)</label>
-                      <input
-                        id="env-decanting-time"
-                        type="number"
-                        min="0"
-                        max="480"
-                        step="5"
-                        value={formData.environment?.decantingTime || ''}
-                        onChange={(e) => handleEnvironmentChange('decantingTime', e.target.value ? parseInt(e.target.value) : undefined)}
-                        placeholder="例: 30"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="env-lighting">照明環境</label>
-                    <input
-                      id="env-lighting"
-                      type="text"
-                      value={formData.environment?.lighting || ''}
-                      onChange={(e) => handleEnvironmentChange('lighting', e.target.value)}
-                      placeholder="例: 自然光、白熱電球、LED照明"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="env-atmosphere">雰囲気・場所</label>
-                    <input
-                      id="env-atmosphere"
-                      type="text"
-                      value={formData.environment?.atmosphere || ''}
-                      onChange={(e) => handleEnvironmentChange('atmosphere', e.target.value)}
-                      placeholder="例: レストラン、自宅、ワイナリー"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="env-mood">気分・状態</label>
-                    <input
-                      id="env-mood"
-                      type="text"
-                      value={formData.environment?.mood || ''}
-                      onChange={(e) => handleEnvironmentChange('mood', e.target.value)}
-                      placeholder="例: リラックス、集中、祝祭気分"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <TagInput
-                      label="同席者"
-                      tags={formData.environment?.companions || []}
-                      onChange={(values) => handleEnvironmentChange('companions', values)}
-                      placeholder="一緒にテイスティングした人"
-                      maxTags={5}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <TagInput
-                      label="合わせた料理"
-                      tags={formData.environment?.food || []}
-                      onChange={(values) => handleEnvironmentChange('food', values)}
-                      placeholder="一緒に楽しんだ料理"
-                      maxTags={8}
-                    />
-                  </div>
-                </div>
-
+              {formData.environment?.decanted && (
                 <div className="form-group">
-                  <label htmlFor="env-notes">環境に関する追加メモ</label>
-                  <textarea
-                    id="env-notes"
-                    value={formData.environment?.notes || ''}
-                    onChange={(e) => handleEnvironmentChange('notes', e.target.value)}
-                    placeholder="その他の環境要因、特記事項など..."
-                    rows={3}
+                  <label htmlFor="decanting-time">デカンタージュ時間（分）</label>
+                  <input
+                    id="decanting-time"
+                    type="number"
+                    value={formData.environment?.decantingTime || ''}
+                    onChange={(e) => handleEnvironmentChange('decantingTime', e.target.value ? parseInt(e.target.value) : undefined)}
+                    min="0"
+                    max="480"
+                    placeholder="30"
                   />
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Form Actions */}
-            <div className="form-actions">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => navigate(-1)}
-                disabled={isSubmitting}
-              >
-                キャンセル
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isSubmitting}
-                disabled={
-                  !formData.wineName || 
-                  !formData.producer || 
-                  (formData.mode === 'quick' && !formData.quickNotes) ||
-                  (formData.mode === 'detailed' && (
-                    !formData.detailedAnalysis?.appearance?.color ||
-                    !formData.detailedAnalysis?.aroma?.firstImpression ||
-                    !formData.detailedAnalysis?.taste?.attack
-                  ))
-                }
-              >
-                {formData.mode === 'quick' ? '記録を保存' : '詳細記録を保存'}
-              </Button>
+              <div className="form-group">
+                <label htmlFor="lighting">照明</label>
+                <input
+                  id="lighting"
+                  type="text"
+                  value={formData.environment?.lighting || ''}
+                  onChange={(e) => handleEnvironmentChange('lighting', e.target.value)}
+                  placeholder="自然光、LED、キャンドル..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="atmosphere">雰囲気</label>
+                <input
+                  id="atmosphere"
+                  type="text"
+                  value={formData.environment?.atmosphere || ''}
+                  onChange={(e) => handleEnvironmentChange('atmosphere', e.target.value)}
+                  placeholder="レストラン、自宅、パーティー..."
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="mood">気分</label>
+                <input
+                  id="mood"
+                  type="text"
+                  value={formData.environment?.mood || ''}
+                  onChange={(e) => handleEnvironmentChange('mood', e.target.value)}
+                  placeholder="リラックス、お祝い、学習..."
+                />
+              </div>
             </div>
-          </>
+
+            <div className="form-group">
+              <TagInput
+                label="同席者"
+                tags={formData.environment?.companions || []}
+                onChange={(companions) => handleEnvironmentChange('companions', companions)}
+                placeholder="名前を入力してEnterで追加"
+                maxTags={10}
+              />
+            </div>
+
+            <div className="form-group">
+              <TagInput
+                label="フードペアリング"
+                tags={formData.environment?.food || []}
+                onChange={(food) => handleEnvironmentChange('food', food)}
+                placeholder="料理名を入力してEnterで追加"
+                maxTags={10}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="env-notes">環境メモ</label>
+              <textarea
+                id="env-notes"
+                value={formData.environment?.notes || ''}
+                onChange={(e) => handleEnvironmentChange('notes', e.target.value)}
+                rows={3}
+                placeholder="その他の環境情報..."
+              />
+            </div>
+          </div>
         )}
+
+        {/* 画像・描画タブ（詳細モードのみ） */}
+        {formData.mode === 'detailed' && activeTab === 'media' && (
+          <div className="form-section">
+            <h2>画像アップロード</h2>
+            <ImageUpload
+              category="tasting"
+              multiple={true}
+              maxFiles={4}
+              onUpload={handleImageUpload}
+              existingImages={formData.images}
+            />
+
+            <h2>手描きメモ</h2>
+            {!showDrawingCanvas ? (
+              <div className="drawing-section">
+                {formData.drawingData && (
+                  <div className="drawing-preview">
+                    <img src={formData.drawingData} alt="描画メモ" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowDrawingCanvas(true)}
+                    >
+                      編集
+                    </Button>
+                  </div>
+                )}
+                {!formData.drawingData && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowDrawingCanvas(true)}
+                  >
+                    描画を開始
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <DrawingCanvas
+                width={600}
+                height={400}
+                initialImage={formData.drawingData}
+                onSave={handleDrawingSave}
+              />
+            )}
+          </div>
+        )}
+
+        {/* 送信ボタン */}
+        <div className="form-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate(-1)}
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            disabled={!formData.wineName || !formData.producer}
+          >
+            記録を保存
+          </Button>
+        </div>
       </form>
+
+      {/* 引用セレクター */}
+      {showCitationSelector && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <CitationSelector
+              currentWineInfo={{
+                wineName: formData.wineName,
+                producer: formData.producer,
+                vintage: formData.vintage
+              }}
+              onCitationSelect={handleCitationSelect}
+              onClose={() => setShowCitationSelector(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

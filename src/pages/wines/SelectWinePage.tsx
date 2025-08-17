@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useDebounceSearch } from '../../hooks/useDebounce'
 import tastingRecordService from '../../services/tastingRecordService'
 import Button from '../../components/common/Button'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -28,14 +29,27 @@ export default function SelectWinePage() {
   const location = useLocation()
   const { userProfile } = useAuth()
   
-  const [searchTerm, setSearchTerm] = useState('')
   const [popularWines, setPopularWines] = useState<PopularWine[]>([])
-  const [searchResults, setSearchResults] = useState<PopularWine[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showNewWineForm, setShowNewWineForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // デバウンス検索フックを使用
+  const {
+    searchTerm,
+    setSearchTerm,
+    results: searchResults,
+    isLoading: isSearching,
+    error: searchError
+  } = useDebounceSearch<PopularWine>(
+    async (term: string) => {
+      if (!userProfile?.uid) return []
+      return await tastingRecordService.searchWines(term, userProfile.uid)
+    },
+    [],
+    300
+  )
 
   const [newWine, setNewWine] = useState<NewWineForm>({
     wineName: '',
@@ -72,28 +86,8 @@ export default function SelectWinePage() {
     loadPopularWines()
   }, [userProfile?.uid])
 
-  // デバウンス検索
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setSearchResults([])
-      return
-    }
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        setIsSearching(true)
-        const results = await tastingRecordService.searchWines(searchTerm, userProfile?.uid)
-        setSearchResults(results)
-      } catch (err) {
-        console.error('Search failed:', err)
-        setError('検索に失敗しました')
-      } finally {
-        setIsSearching(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, userProfile?.uid])
+  // 検索エラーを統合
+  const combinedError = error || searchError
 
   // 表示するワインリスト
   const displayedWines = useMemo(() => {
@@ -176,9 +170,9 @@ export default function SelectWinePage() {
         </Button>
       </div>
 
-      {error && (
+      {combinedError && (
         <ErrorMessage 
-          message={error} 
+          message={combinedError} 
           onDismiss={() => setError(null)}
         />
       )}

@@ -1,10 +1,156 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    
+    // ===== ヘルパー関数 =====
+    
+    // ユーザー認証チェック
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ファイル所有者チェック
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // 管理者権限チェック
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.admin == true;
+    }
+    
+    // プレミアムユーザーチェック
+    function isPremiumUser() {
+      return isAuthenticated() && 
+             request.auth.token.premium == true;
+    }
+    
+    // 画像ファイル形式チェック
+    function isValidImageFile() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    }
+    
+    // ファイルサイズ制限チェック（10MB）
+    function isValidFileSize() {
+      return request.resource.size <= 10 * 1024 * 1024;
+    }
+    
+    // プレミアムユーザーのファイルサイズ制限（20MB）
+    function isValidPremiumFileSize() {
+      return request.resource.size <= 20 * 1024 * 1024;
+    }
+    
+    // ===== ユーザープロフィール画像 =====
+    
+    match /users/{userId}/profile/{fileName} {
+      // 読み取り: すべての認証済みユーザー（プロフィール画像は基本的に公開）
+      allow read: if isAuthenticated();
+      
+      // 書き込み: 自分のプロフィール画像のみ、適切な形式・サイズ
+      allow write: if isOwner(userId) &&
+                      isValidImageFile() &&
+                      isValidFileSize();
+      
+      // 削除: 自分のプロフィール画像のみ
+      allow delete: if isOwner(userId);
+    }
+    
+    // ===== テイスティング記録の画像 =====
+    
+    match /tastingRecords/{userId}/{recordId}/{fileName} {
+      // 読み取り: ファイル所有者または公開記録
+      allow read: if isOwner(userId) || 
+                     (isAuthenticated() && 
+                      firestore.get(/databases/(default)/documents/tastingRecords/$(recordId)).data.isPublic == true);
+      
+      // 書き込み: 認証済みユーザーが自分の記録に画像をアップロード
+      allow write: if isOwner(userId) &&
+                      isValidImageFile() &&
+                      // プレミアムユーザーは大きいファイルサイズ許可
+                      (isPremiumUser() ? isValidPremiumFileSize() : isValidFileSize()) &&
+                      // 記録の存在確認
+                      firestore.exists(/databases/(default)/documents/tastingRecords/$(recordId)) &&
+                      firestore.get(/databases/(default)/documents/tastingRecords/$(recordId)).data.userId == userId;
+      
+      // 削除: 自分の記録の画像のみ
+      allow delete: if isOwner(userId);
+    }
+    
+    // ===== 手描きキャンバス画像 =====
+    
+    match /drawings/{userId}/{recordId}/{fileName} {
+      // 読み取り: ファイル所有者または公開記録
+      allow read: if isOwner(userId) || 
+                     (isAuthenticated() && 
+                      firestore.get(/databases/(default)/documents/tastingRecords/$(recordId)).data.isPublic == true);
+      
+      // 書き込み: 認証済みユーザーが自分の手描き画像をアップロード
+      allow write: if isOwner(userId) &&
+                      isValidImageFile() &&
+                      isValidFileSize() &&
+                      // 対応する記録の存在確認
+                      firestore.exists(/databases/(default)/documents/tastingRecords/$(recordId)) &&
+                      firestore.get(/databases/(default)/documents/tastingRecords/$(recordId)).data.userId == userId;
+      
+      // 削除: 自分の手描き画像のみ
+      allow delete: if isOwner(userId);
+    }
+    
+    // ===== 一時ファイル（アップロード中の画像処理） =====
+    
+    match /temp/{userId}/{fileName} {
+      // 読み取り・書き込み: 自分の一時ファイルのみ
+      allow read, write: if isOwner(userId) &&
+                            isValidImageFile() &&
+                            isValidFileSize();
+      
+      // 削除: 自分の一時ファイルのみ（自動削除対応）
+      allow delete: if isOwner(userId);
+    }
+    
+    // ===== 公開画像（システム画像・サンプル画像） =====
+    
+    match /public/{allPaths=**} {
+      // 読み取り: すべてのユーザー（ゲストモード含む）
+      allow read: if true;
+      
+      // 書き込み・削除: 管理者のみ
+      allow write, delete: if isAdmin();
+    }
+    
+    // ===== システム画像（アイコン・UI画像） =====
+    
+    match /system/{allPaths=**} {
+      // 読み取り: すべてのユーザー
+      allow read: if true;
+      
+      // 書き込み・削除: 管理者のみ
+      allow write, delete: if isAdmin();
+    }
+    
+    // ===== バックアップ・エクスポートデータ =====
+    
+    match /exports/{userId}/{fileName} {
+      // 読み取り・書き込み: 自分のエクスポートデータのみ
+      allow read, write: if isOwner(userId);
+      
+      // 削除: 自分のエクスポートデータまたは管理者
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // ===== 分析・ログファイル =====
+    
+    match /logs/{allPaths=**} {
+      // 読み取り・書き込み・削除: 管理者のみ
+      allow read, write, delete: if isAdmin();
+    }
+    
+    // ===== デフォルト拒否 =====
+    
+    // 上記にマッチしないすべてのファイルへのアクセスを拒否
     match /{allPaths=**} {
       allow read, write: if false;
     }

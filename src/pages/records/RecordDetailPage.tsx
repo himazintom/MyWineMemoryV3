@@ -5,6 +5,7 @@ import tastingRecordService from '../../services/tastingRecordService'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import Button from '../../components/common/Button'
+import TastingAnalysisCharts from '../../components/charts/TastingAnalysisCharts'
 import type { TastingRecord } from '../../types/tasting'
 
 export default function RecordDetailPage() {
@@ -348,6 +349,14 @@ export default function RecordDetailPage() {
                   </>
                 )}
               </dl>
+            </div>
+          )}
+
+          {/* 分析チャート */}
+          {record.detailedAnalysis && (
+            <div className="info-card charts-section">
+              <h3>テイスティング分析チャート</h3>
+              <TastingAnalysisCharts record={record} />
             </div>
           )}
 

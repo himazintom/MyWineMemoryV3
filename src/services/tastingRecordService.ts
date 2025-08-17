@@ -29,6 +29,24 @@ class TastingRecordService {
 
   private constructor() {}
 
+  /**
+   * Firestoreデータを型安全なTastingRecordに変換
+   */
+  private convertFirestoreData(data: any): TastingRecord | null {
+    try {
+      return {
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || new Date(data.createdAt) || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(data.updatedAt) || new Date(),
+        tastingDate: data.tastingDate?.toDate?.() || new Date(data.tastingDate) || new Date(),
+        citations: data.citations || []
+      } as TastingRecord
+    } catch (error) {
+      console.error('Failed to convert Firestore data:', error)
+      return null
+    }
+  }
+
   public static getInstance(): TastingRecordService {
     if (!TastingRecordService.instance) {
       TastingRecordService.instance = new TastingRecordService()
@@ -841,6 +859,316 @@ class TastingRecordService {
       console.error('Failed to get user stats:', error)
       throw new Error(`ユーザー統計の取得に失敗しました: ${error}`)
     }
+  }
+
+  /**
+   * 複合条件でワイン記録を検索
+   */
+  async searchRecordsWithFilters(
+    userId: string,
+    filters: {
+      searchTerm?: string
+      countries?: string[]
+      regions?: string[]
+      types?: string[]
+      colors?: string[]
+      grapes?: string[]
+      priceRange?: { min?: number; max?: number }
+      ratingRange?: { min?: number; max?: number }
+      vintageRange?: { min?: number; max?: number }
+      dateRange?: { start?: Date; end?: Date }
+      tags?: string[]
+    },
+    options: {
+      limitCount?: number
+      lastRecord?: any
+      orderByField?: string
+      orderDirection?: 'asc' | 'desc'
+    } = {}
+  ): Promise<{
+    records: TastingRecord[]
+    lastDocument: any
+    hasMore: boolean
+    totalCount: number
+  }> {
+    try {
+      const firestore = firebaseService.getFirestore()
+      const {
+        limitCount = 20,
+        lastRecord,
+        orderByField = 'tastingDate',
+        orderDirection = 'desc'
+      } = options
+
+      // 基本クエリの構築
+      let q = query(
+        collection(firestore, this.collectionName),
+        where('userId', '==', userId),
+        orderBy(orderByField, orderDirection)
+      )
+
+      // 配列型フィールドのフィルター
+      if (filters.countries && filters.countries.length > 0) {
+        q = query(q, where('country', 'in', filters.countries))
+      }
+      if (filters.types && filters.types.length > 0) {
+        q = query(q, where('type', 'in', filters.types))
+      }
+
+      // 数値範囲フィルター
+      if (filters.priceRange) {
+        if (filters.priceRange.min !== undefined) {
+          q = query(q, where('price', '>=', filters.priceRange.min))
+        }
+        if (filters.priceRange.max !== undefined) {
+          q = query(q, where('price', '<=', filters.priceRange.max))
+        }
+      }
+
+      if (filters.ratingRange) {
+        if (filters.ratingRange.min !== undefined) {
+          q = query(q, where('rating', '>=', filters.ratingRange.min))
+        }
+        if (filters.ratingRange.max !== undefined) {
+          q = query(q, where('rating', '<=', filters.ratingRange.max))
+        }
+      }
+
+      if (filters.vintageRange) {
+        if (filters.vintageRange.min !== undefined) {
+          q = query(q, where('vintage', '>=', filters.vintageRange.min))
+        }
+        if (filters.vintageRange.max !== undefined) {
+          q = query(q, where('vintage', '<=', filters.vintageRange.max))
+        }
+      }
+
+      if (filters.dateRange) {
+        if (filters.dateRange.start) {
+          q = query(q, where('tastingDate', '>=', filters.dateRange.start))
+        }
+        if (filters.dateRange.end) {
+          q = query(q, where('tastingDate', '<=', filters.dateRange.end))
+        }
+      }
+
+      // ページネーション
+      if (lastRecord) {
+        q = query(q, startAfter(lastRecord))
+      }
+      q = query(q, limit(limitCount + 1))
+
+      const querySnapshot = await getDocs(q)
+      let records: TastingRecord[] = querySnapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          tastingDate: data.tastingDate?.toDate() || new Date()
+        } as TastingRecord
+      })
+
+      // クライアントサイドでの追加フィルタリング（Firestoreでは制限があるため）
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase()
+        records = records.filter(record =>
+          record.wineName.toLowerCase().includes(searchLower) ||
+          record.producer.toLowerCase().includes(searchLower) ||
+          record.region?.toLowerCase().includes(searchLower) ||
+          record.notes?.toLowerCase().includes(searchLower)
+        )
+      }
+
+      if (filters.regions && filters.regions.length > 0) {
+        records = records.filter(record =>
+          record.region && filters.regions!.includes(record.region)
+        )
+      }
+
+      if (filters.colors && filters.colors.length > 0) {
+        records = records.filter(record =>
+          record.color && filters.colors!.includes(record.color)
+        )
+      }
+
+      if (filters.grapes && filters.grapes.length > 0) {
+        records = records.filter(record =>
+          record.grapes && record.grapes.some(grape =>
+            filters.grapes!.includes(grape)
+          )
+        )
+      }
+
+      if (filters.tags && filters.tags.length > 0) {
+        records = records.filter(record =>
+          record.tags && record.tags.some(tag =>
+            filters.tags!.includes(tag)
+          )
+        )
+      }
+
+      // ページネーション情報
+      const hasMore = records.length > limitCount
+      const actualRecords = hasMore ? records.slice(0, limitCount) : records
+      const lastDocument = actualRecords.length > 0 
+        ? querySnapshot.docs[Math.min(actualRecords.length - 1, querySnapshot.docs.length - 1)]
+        : null
+
+      // 総数取得（パフォーマンスを考慮してサンプリング）
+      const totalCountQuery = query(
+        collection(firestore, this.collectionName),
+        where('userId', '==', userId)
+      )
+      const totalSnapshot = await getDocs(totalCountQuery)
+      let totalCount = totalSnapshot.size
+
+      // フィルター適用後の推定総数
+      if (Object.keys(filters).length > 0) {
+        const allRecords = totalSnapshot.docs.map(doc => doc.data() as TastingRecord)
+        let filteredAll = allRecords
+
+        if (filters.searchTerm) {
+          const searchLower = filters.searchTerm.toLowerCase()
+          filteredAll = filteredAll.filter(record =>
+            record.wineName.toLowerCase().includes(searchLower) ||
+            record.producer.toLowerCase().includes(searchLower)
+          )
+        }
+
+        totalCount = filteredAll.length
+      }
+
+      return {
+        records: actualRecords,
+        lastDocument,
+        hasMore,
+        totalCount
+      }
+    } catch (error) {
+      console.error('Failed to search records with filters:', error)
+      throw new Error(`フィルター検索に失敗しました: ${error}`)
+    }
+  }
+
+  /**
+   * 重複ワイン検出（新規登録時の重複チェック用）
+   */
+  async detectDuplicateWines(
+    userId: string,
+    wineInfo: {
+      wineName: string
+      producer: string
+      vintage?: number
+    }
+  ): Promise<WineMatch[]> {
+    try {
+      const { records } = await this.getUserRecords(userId)
+      const matches: WineMatch[] = []
+
+      records.forEach(record => {
+        let confidence = 0
+        const matchedFields: string[] = []
+
+        // 完全一致チェック
+        if (record.wineName.toLowerCase() === wineInfo.wineName.toLowerCase()) {
+          confidence += 0.6
+          matchedFields.push('wineName')
+        }
+        if (record.producer.toLowerCase() === wineInfo.producer.toLowerCase()) {
+          confidence += 0.3
+          matchedFields.push('producer')
+        }
+        if (wineInfo.vintage && record.vintage === wineInfo.vintage) {
+          confidence += 0.1
+          matchedFields.push('vintage')
+        }
+
+        // 部分一致チェック
+        if (confidence < 0.9) {
+          const recordName = record.wineName.toLowerCase()
+          const searchName = wineInfo.wineName.toLowerCase()
+          const recordProducer = record.producer.toLowerCase()
+          const searchProducer = wineInfo.producer.toLowerCase()
+
+          if (recordName.includes(searchName) || searchName.includes(recordName)) {
+            confidence += 0.2
+            if (!matchedFields.includes('wineName')) {
+              matchedFields.push('wineName(partial)')
+            }
+          }
+          if (recordProducer.includes(searchProducer) || searchProducer.includes(recordProducer)) {
+            confidence += 0.1
+            if (!matchedFields.includes('producer')) {
+              matchedFields.push('producer(partial)')
+            }
+          }
+        }
+
+        // 閾値以上の場合に追加
+        if (confidence >= 0.4) {
+          matches.push({
+            wineId: record.id,
+            wineName: record.wineName,
+            producer: record.producer,
+            vintage: record.vintage,
+            confidence,
+            matchedFields
+          })
+        }
+      })
+
+      return matches.sort((a, b) => b.confidence - a.confidence)
+    } catch (error) {
+      console.error('Failed to detect duplicate wines:', error)
+      throw new Error(`重複ワインの検出に失敗しました: ${error}`)
+    }
+  }
+
+  /**
+   * 特定の記録を引用している記録を検索
+   */
+  async findRecordsByCitation(sourceRecordId: string): Promise<TastingRecord[]> {
+    try {
+      const firestore = firebaseService.getFirestore()
+      
+      // 引用を含む記録を検索（Firestoreでは配列内のオブジェクトフィールドでの直接検索は制限があるため、全記録を取得してフィルタリング）
+      const allRecordsQuery = query(
+        collection(firestore, this.collectionName),
+        orderBy('updatedAt', 'desc')
+      )
+      
+      const snapshot = await getDocs(allRecordsQuery)
+      const records: TastingRecord[] = []
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data()
+        const record = this.convertFirestoreData({ id: doc.id, ...data })
+        
+        if (record && record.citations) {
+          // 該当する引用が含まれているかチェック
+          const hasCitation = record.citations.some(
+            citation => citation.sourceRecordId === sourceRecordId
+          )
+          if (hasCitation) {
+            records.push(record)
+          }
+        }
+      })
+      
+      return records
+    } catch (error) {
+      console.error('Failed to find records by citation:', error)
+      throw new Error('引用記録の検索に失敗しました')
+    }
+  }
+
+  /**
+   * テイスティング記録の取得（getTastingRecordのエイリアス）
+   */
+  async getTastingRecord(recordId: string): Promise<TastingRecord | null> {
+    return this.getRecord(recordId)
   }
 }
 

@@ -2,18 +2,238 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    
+    // ===== 認証・認可関数 =====
+    
+    // ユーザー認証チェック
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ユーザー所有権チェック
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // 管理者権限チェック
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.admin == true;
+    }
+    
+    // プレミアムユーザーチェック
+    function isPremiumUser() {
+      return isAuthenticated() && 
+             request.auth.token.premium == true;
+    }
+    
+    // ===== データ検証関数 =====
+    
+    // 必須フィールドの存在確認
+    function hasRequiredFields(data, requiredFields) {
+      return requiredFields.all(field => field in data);
+    }
+    
+    // 文字列長制限チェック
+    function isValidString(value, minLength, maxLength) {
+      return value is string && 
+             value.size() >= minLength && 
+             value.size() <= maxLength;
+    }
+    
+    // 数値範囲チェック
+    function isValidNumber(value, min, max) {
+      return value is number && 
+             value >= min && 
+             value <= max;
+    }
+    
+    // 評価値チェック (0.0-10.0)
+    function isValidRating(rating) {
+      return isValidNumber(rating, 0.0, 10.0);
+    }
+    
+    // 日付妥当性チェック
+    function isValidDate(timestamp) {
+      return timestamp is timestamp && 
+             timestamp <= request.time;
+    }
+    
+    // 配列要素数制限チェック
+    function isValidArray(arr, maxSize) {
+      return arr is list && 
+             arr.size() <= maxSize;
+    }
+    
+    // ===== ユーザーコレクション =====
+    
+    match /users/{userId} {
+      // 読み取り: 自分のデータまたは公開プロフィール
+      allow read: if isOwner(userId) || 
+                     (isAuthenticated() && 
+                      resource.data.get('preferences', {}).get('privacy', {}).get('publicProfile', false) == true);
+      
+      // 作成: 認証済みユーザーが自分のプロフィールを作成
+      allow create: if isOwner(userId) &&
+                       hasRequiredFields(resource.data, ['uid', 'email', 'displayName', 'createdAt']) &&
+                       resource.data.uid == userId &&
+                       isValidString(resource.data.email, 5, 100) &&
+                       isValidString(resource.data.displayName, 1, 50) &&
+                       isValidDate(resource.data.createdAt);
+      
+      // 更新: 自分のプロフィールのみ、必須フィールドを変更不可
+      allow update: if isOwner(userId) &&
+                       resource.data.uid == request.auth.uid &&
+                       resource.data.email == request.auth.token.email &&
+                       isValidDate(resource.data.updatedAt);
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ===== テイスティング記録コレクション =====
+    
+    match /tastingRecords/{recordId} {
+      // 読み取り: 自分の記録または公開記録
+      allow read: if isOwner(resource.data.userId) || 
+                     (isAuthenticated() && resource.data.isPublic == true);
+      
+      // 作成: 認証済みユーザーが自分の記録を作成
+      allow create: if isAuthenticated() &&
+                       hasRequiredFields(resource.data, ['userId', 'wineName', 'producer', 'tastingDate', 'rating', 'mode', 'isPublic', 'createdAt']) &&
+                       resource.data.userId == request.auth.uid &&
+                       isValidString(resource.data.wineName, 1, 100) &&
+                       isValidString(resource.data.producer, 1, 100) &&
+                       isValidRating(resource.data.rating) &&
+                       resource.data.mode in ['quick', 'detailed'] &&
+                       isValidDate(resource.data.tastingDate) &&
+                       isValidDate(resource.data.createdAt) &&
+                       // 画像制限: 無料ユーザーは1枚、プレミアムは4枚
+                       (!('images' in resource.data) || 
+                        (isPremiumUser() && isValidArray(resource.data.images, 4)) ||
+                        (!isPremiumUser() && isValidArray(resource.data.images, 1)));
+      
+      // 更新: 自分の記録のみ、userIdを変更不可
+      allow update: if isOwner(resource.data.userId) &&
+                       resource.data.userId == request.auth.uid &&
+                       isValidDate(resource.data.updatedAt);
+      
+      // 削除: 自分の記録のみ
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // ===== ワインコレクション =====
+    
+    match /wines/{wineId} {
+      // 読み取り: 認証済みユーザー
+      allow read: if isAuthenticated();
+      
+      // 作成・更新: 認証済みユーザー（共有ワインデータ）
+      allow create, update: if isAuthenticated() &&
+                              hasRequiredFields(resource.data, ['name', 'producer', 'type']) &&
+                              isValidString(resource.data.name, 1, 100) &&
+                              isValidString(resource.data.producer, 1, 100);
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ===== クイズ進捗コレクション =====
+    
+    match /quizProgress/{userId} {
+      // 読み取り・更新: 自分の進捗のみ
+      allow read, write: if isOwner(userId);
+    }
+    
+    // ===== ゲーミフィケーションデータ =====
+    
+    match /userXP/{userId} {
+      // 読み取り: 自分のXPまたは公開プロフィール
+      allow read: if isOwner(userId) || 
+                     (isAuthenticated() && 
+                      get(/databases/$(database)/documents/users/$(userId)).data.get('preferences', {}).get('privacy', {}).get('publicProfile', false) == true);
+      
+      // 作成・更新: 自分のXPのみ
+      allow create, update: if isOwner(userId) &&
+                              hasRequiredFields(resource.data, ['userId', 'totalXP', 'level']) &&
+                              resource.data.userId == userId &&
+                              isValidNumber(resource.data.totalXP, 0, 999999) &&
+                              isValidNumber(resource.data.level, 1, 100);
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    match /userBadges/{userId} {
+      // 読み取り: 自分のバッジまたは公開プロフィール
+      allow read: if isOwner(userId) || 
+                     (isAuthenticated() && 
+                      get(/databases/$(database)/documents/users/$(userId)).data.get('preferences', {}).get('privacy', {}).get('publicProfile', false) == true);
+      
+      // 作成・更新: 自分のバッジのみ
+      allow write: if isOwner(userId);
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    match /dailyGoals/{userId} {
+      // 読み取り・書き込み: 自分の目標のみ
+      allow read, write: if isOwner(userId);
+    }
+    
+    // ===== 通知・設定 =====
+    
+    match /userNotifications/{userId} {
+      // 読み取り・書き込み: 自分の通知のみ
+      allow read, write: if isOwner(userId);
+    }
+    
+    // ===== 管理者専用コレクション =====
+    
+    match /systemConfig/{configId} {
+      // 読み取り: 認証済みユーザー
+      allow read: if isAuthenticated();
+      
+      // 書き込み: 管理者のみ
+      allow write: if isAdmin();
+    }
+    
+    match /analytics/{docId} {
+      // 読み取り・書き込み: 管理者のみ
+      allow read, write: if isAdmin();
+    }
+    
+    // ===== 共有・公開データ =====
+    
+    match /publicWines/{wineId} {
+      // 読み取り: 全ユーザー（ゲストモード含む）
+      allow read: if true;
+      
+      // 書き込み: 認証済みユーザー
+      allow write: if isAuthenticated();
+    }
+    
+    match /wineQuizData/{level} {
+      // 読み取り: 認証済みユーザー
+      allow read: if isAuthenticated();
+      
+      // 書き込み: 管理者のみ
+      allow write: if isAdmin();
+    }
+    
+    // ===== セキュリティログ =====
+    
+    match /securityLogs/{logId} {
+      // 読み取り・書き込み: 管理者のみ
+      allow read, write: if isAdmin();
+    }
+    
+    // ===== デフォルト拒否 =====
+    
+    // 上記にマッチしないすべてのドキュメントへのアクセスを拒否
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 9, 15);
+      allow read, write: if false;
     }
   }
 }
