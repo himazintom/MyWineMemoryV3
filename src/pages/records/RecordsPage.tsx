@@ -75,10 +75,10 @@ export default function RecordsPage() {
       filtered = filtered.filter(record =>
         record.wineName.toLowerCase().includes(searchLower) ||
         record.producer.toLowerCase().includes(searchLower) ||
-        record.country.toLowerCase().includes(searchLower) ||
-        record.region.toLowerCase().includes(searchLower) ||
-        record.quickNotes?.toLowerCase().includes(searchLower) ||
-        record.tags.some(tag => tag.toLowerCase().includes(searchLower))
+        (record.country || '').toLowerCase().includes(searchLower) ||
+        (record.region || '').toLowerCase().includes(searchLower) ||
+        (record.quickNotes || record.notes || '').toLowerCase().includes(searchLower) ||
+        (record.tags || []).some(tag => tag.toLowerCase().includes(searchLower))
       )
     }
 
@@ -199,7 +199,7 @@ export default function RecordsPage() {
           country: record.country,
           region: record.region,
           type: record.type,
-          color: record.color,
+          color: record.color || record.type,
           vintage: record.vintage,
           alcoholContent: record.alcoholContent,
           price: record.price,
@@ -441,18 +441,18 @@ export default function RecordsPage() {
                           </div>
                         </div>
 
-                        {record.quickNotes && (
+                        {(record.quickNotes || record.notes) && (
                           <div className="notes-preview">
-                            <p>{record.quickNotes.slice(0, 100)}{record.quickNotes.length > 100 ? '...' : ''}</p>
+                            <p>{(record.quickNotes || record.notes || '').slice(0, 100)}{(record.quickNotes || record.notes || '').length > 100 ? '...' : ''}</p>
                           </div>
                         )}
 
-                        {record.tags.length > 0 && (
+                        {record.tags && record.tags.length > 0 && (
                           <div className="record-tags">
-                            {record.tags.slice(0, 3).map((tag, index) => (
+                            {record.tags?.slice(0, 3).map((tag, index) => (
                               <span key={index} className="tag">{tag}</span>
                             ))}
-                            {record.tags.length > 3 && (
+                            {record.tags && record.tags.length > 3 && (
                               <span className="tag-more">+{record.tags.length - 3}</span>
                             )}
                           </div>

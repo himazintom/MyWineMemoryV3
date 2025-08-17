@@ -286,10 +286,10 @@ export default function RecordDetailPage() {
                 )}
                 {record.detailedAnalysis.aroma.categories && 
                  Object.entries(record.detailedAnalysis.aroma.categories).map(([category, value]) => (
-                  value > 0 && (
+                  Array.isArray(value) && value.length > 0 && (
                     <div key={category}>
                       <dt>{category}</dt>
-                      <dd>{value}/10</dd>
+                      <dd>{value.join(', ')}</dd>
                     </div>
                   )
                 ))}

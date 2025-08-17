@@ -12,6 +12,7 @@ export interface TastingRecord {
   region?: string
   country?: string
   type: string // WineType
+  color?: string // WineColor
   grapes?: string[] // 品種
   alcoholContent?: number
   price?: number
@@ -44,7 +45,7 @@ export interface DetailedAnalysis {
   // 外観分析
   appearance?: {
     clarity?: string
-    intensity?: string
+    intensity?: number | string // 1-5 or string
     transparency?: number // 1-5
     viscosity?: number // 1-5
     color?: string
@@ -74,6 +75,7 @@ export interface DetailedAnalysis {
     development?: string
     finish?: string
     length?: number // finishLengthをlengthに変更
+    finishLength?: number // 後方互換性
     balance?: number // 1-10
     complexity?: number // 1-10
     sweetness?: number // 1-10
@@ -82,20 +84,32 @@ export interface DetailedAnalysis {
     body?: number // 1-10
     alcohol?: number // 1-10
   }
+  
+  // 構造分析（後方互換性）
+  structure?: {
+    sweetness?: number
+    acidity?: number
+    tannin?: number
+    alcohol?: number
+    body?: number
+  }
 }
 
 // テイスティング環境
 export interface TastingEnvironment {
   glassType?: string
   temperature?: number // servingTemperatureをtemperatureに変更
+  servingTemperature?: number // 後方互換性
   decanted?: boolean
   decantTime?: number // decantingTimeをdecantTimeに変更
+  decantingTime?: number // 後方互換性
   lighting?: string
   atmosphere?: string
   weather?: string
   mood?: string
   companions?: string[]
   pairing?: string[] // foodをpairingに変更
+  food?: string[] // 後方互換性
   notes?: string
 }
 

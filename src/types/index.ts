@@ -67,3 +67,14 @@ export type {
   RequirementType,
   ActivityType
 } from './gamification'
+
+// エラーハンドリング関連
+export type {
+  AppError,
+  ErrorCode,
+  ErrorSeverity,
+  ErrorCategory,
+  ErrorStats,
+  RetryConfig
+} from './error'
+export { DEFAULT_RETRY_CONFIG } from './error'

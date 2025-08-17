@@ -6,6 +6,7 @@ import Layout from './components/layout/Layout'
 import ScrollToTop from './components/common/ScrollToTop'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { ErrorProvider } from './contexts/ErrorContext'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -27,9 +28,10 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <Router>
+      <ErrorProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Router>
           <ScrollToTop />
           <Layout>
           <Suspense fallback={<LoadingSpinner />}>
@@ -63,9 +65,10 @@ function App() {
             </Routes>
           </Suspense>
         </Layout>
-          </Router>
-        </AuthProvider>
-      </ThemeProvider>
+            </Router>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorProvider>
     </ErrorBoundary>
   )
 }

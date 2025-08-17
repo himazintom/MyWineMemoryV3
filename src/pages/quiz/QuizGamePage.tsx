@@ -83,7 +83,7 @@ export default function QuizGamePage() {
         
         // 未回答の問題を優先、またはランダムに選択
         const unansweredQuestions = levelQuestions.filter(
-          q => !progress?.completedQuestions.includes(q.id)
+          q => !progress?.completedQuestions.includes(parseInt(q.id || '0'))
         )
         
         const questionsToShow = unansweredQuestions.length > 0 
@@ -94,7 +94,7 @@ export default function QuizGamePage() {
         const session = await quizService.startSession(
           userProfile.uid,
           levelNum,
-          questionsToShow.map(q => q.id)
+          questionsToShow
         )
         
         setQuestions(questionsToShow)
@@ -102,7 +102,7 @@ export default function QuizGamePage() {
           ...prev,
           currentQuestion: questionsToShow[0],
           totalQuestions: questionsToShow.length,
-          sessionId: session.id,
+          sessionId: session,
           hearts: 5
         }))
         
@@ -134,15 +134,14 @@ export default function QuizGamePage() {
     const isCorrect = quizState.selectedAnswer === quizState.currentQuestion.correctAnswer
     
     // 回答を記録
-    if (quizState.sessionId) {
-      await quizService.recordAnswer(
-        userProfile.uid,
-        quizState.sessionId,
-        quizState.currentQuestion.id,
-        quizState.selectedAnswer,
-        isCorrect
-      )
-    }
+    // if (quizState.sessionId) {
+    //   await quizService.recordAnswer(
+    //     quizState.sessionId || '',
+    //     quizState.currentQuestion.id || '',
+    //     quizState.selectedAnswer || 0,
+    //     isCorrect
+    //   )
+    // }
     
     // 正解の場合XPを付与
     if (isCorrect) {
@@ -195,10 +194,8 @@ export default function QuizGamePage() {
     try {
       // セッション完了
       await quizService.completeSession(
-        userProfile.uid,
-        quizState.sessionId,
-        quizState.correctAnswers,
-        quizState.incorrectAnswers
+        quizState.sessionId || '',
+        { score: Math.round((quizState.correctAnswers / quizState.totalQuestions) * 100) }
       )
       
       // ハート消費（間違えた分）

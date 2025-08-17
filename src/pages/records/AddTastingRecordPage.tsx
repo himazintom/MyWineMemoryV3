@@ -55,7 +55,7 @@ export default function AddTastingRecordPage() {
     region: '',
     country: '',
     type: 'red',
-    color: 'red',
+    color: 'medium',
     tastingDate: new Date(),
     mode: 'quick',
     rating: 5,
@@ -159,15 +159,15 @@ export default function AddTastingRecordPage() {
     }))
   }
 
-  const handleAromaCategoryChange = (category: keyof DetailedAnalysis['aroma']['categories'], values: string[]) => {
+  const handleAromaCategoryChange = (category: string, values: string[]) => {
     setFormData(prev => ({
       ...prev,
       detailedAnalysis: {
         ...prev.detailedAnalysis!,
         aroma: {
-          ...prev.detailedAnalysis!.aroma,
+          ...prev.detailedAnalysis?.aroma,
           categories: {
-            ...prev.detailedAnalysis!.aroma.categories,
+            ...prev.detailedAnalysis?.aroma?.categories,
             [category]: values
           }
         }
@@ -220,7 +220,7 @@ export default function AddTastingRecordPage() {
         detailedAnalysis: formData.mode === 'detailed' ? formData.detailedAnalysis : undefined,
         environment: formData.mode === 'detailed' ? formData.environment : undefined,
         isPublic: formData.isPublic,
-        imageUrls: [],
+        images: [],
         tags: formData.tags
       }
 
@@ -538,14 +538,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.appearance.intensity || 3}
+                          value={formData.detailedAnalysis?.appearance?.intensity || 3}
                           onChange={(e) => handleDetailedAnalysisChange('appearance', 'intensity', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>薄い</span>
                           <span>濃い</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance.intensity || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.intensity || 3}</div>
                       </div>
                     </div>
 
@@ -560,14 +560,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.appearance.transparency || 3}
+                          value={formData.detailedAnalysis?.appearance?.transparency || 3}
                           onChange={(e) => handleDetailedAnalysisChange('appearance', 'transparency', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>濁っている</span>
                           <span>透明</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance.transparency || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.transparency || 3}</div>
                       </div>
                     </div>
 
@@ -582,14 +582,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.appearance.viscosity || 3}
+                          value={formData.detailedAnalysis?.appearance?.viscosity || 3}
                           onChange={(e) => handleDetailedAnalysisChange('appearance', 'viscosity', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>さらさら</span>
                           <span>とろみ</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.appearance.viscosity || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.appearance?.viscosity || 3}</div>
                       </div>
                     </div>
                   </div>
@@ -600,7 +600,7 @@ export default function AddTastingRecordPage() {
                       <input
                         id="appearance-color"
                         type="text"
-                        value={formData.detailedAnalysis?.appearance.color || ''}
+                        value={formData.detailedAnalysis?.appearance?.color || ''}
                         onChange={(e) => handleDetailedAnalysisChange('appearance', 'color', e.target.value)}
                         placeholder="例: ガーネット、レモンイエロー、ピンクゴールド"
                       />
@@ -610,7 +610,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="appearance-notes">色に関する詳細ノート</label>
                       <textarea
                         id="appearance-notes"
-                        value={formData.detailedAnalysis?.appearance.colorNotes || ''}
+                        value={formData.detailedAnalysis?.appearance?.colorNotes || ''}
                         onChange={(e) => handleDetailedAnalysisChange('appearance', 'colorNotes', e.target.value)}
                         placeholder="縁の色、グラデーション、経年変化など..."
                         rows={2}
@@ -638,14 +638,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.aroma.intensity || 3}
+                          value={formData.detailedAnalysis?.aroma?.intensity || 3}
                           onChange={(e) => handleDetailedAnalysisChange('aroma', 'intensity', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>弱い</span>
                           <span>強い</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.aroma.intensity || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.aroma?.intensity || 3}</div>
                       </div>
                     </div>
                   </div>
@@ -655,7 +655,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="aroma-first">第一印象</label>
                       <textarea
                         id="aroma-first"
-                        value={formData.detailedAnalysis?.aroma.firstImpression || ''}
+                        value={formData.detailedAnalysis?.aroma?.firstImpression || ''}
                         onChange={(e) => handleDetailedAnalysisChange('aroma', 'firstImpression', e.target.value)}
                         placeholder="グラスに注いだ直後の香りの印象..."
                         rows={2}
@@ -666,7 +666,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="aroma-swirling">スワリング後</label>
                       <textarea
                         id="aroma-swirling"
-                        value={formData.detailedAnalysis?.aroma.afterSwirling || ''}
+                        value={formData.detailedAnalysis?.aroma?.afterSwirling || ''}
                         onChange={(e) => handleDetailedAnalysisChange('aroma', 'afterSwirling', e.target.value)}
                         placeholder="グラスを回した後の香りの変化..."
                         rows={2}
@@ -680,7 +680,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="果実系"
-                          tags={formData.detailedAnalysis?.aroma.categories.fruits || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.fruits || []}
                           onChange={(values) => handleAromaCategoryChange('fruits', values)}
                           placeholder="ベリー、柑橘、トロピカル..."
                           maxTags={8}
@@ -690,7 +690,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="花・植物系"
-                          tags={formData.detailedAnalysis?.aroma.categories.florals || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.florals || []}
                           onChange={(values) => handleAromaCategoryChange('florals', values)}
                           placeholder="バラ、スミレ、ハーブ..."
                           maxTags={8}
@@ -700,7 +700,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="スパイス"
-                          tags={formData.detailedAnalysis?.aroma.categories.spices || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.spices || []}
                           onChange={(values) => handleAromaCategoryChange('spices', values)}
                           placeholder="胡椒、シナモン、バニラ..."
                           maxTags={8}
@@ -710,7 +710,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="土・鉱物系"
-                          tags={formData.detailedAnalysis?.aroma.categories.earthy || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.earthy || []}
                           onChange={(values) => handleAromaCategoryChange('earthy', values)}
                           placeholder="土、石、ミネラル..."
                           maxTags={8}
@@ -720,7 +720,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="樽・木系"
-                          tags={formData.detailedAnalysis?.aroma.categories.oaky || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.oaky || []}
                           onChange={(values) => handleAromaCategoryChange('oaky', values)}
                           placeholder="オーク、杉、煙..."
                           maxTags={8}
@@ -730,7 +730,7 @@ export default function AddTastingRecordPage() {
                       <div className="category-group">
                         <TagInput
                           label="その他"
-                          tags={formData.detailedAnalysis?.aroma.categories.other || []}
+                          tags={formData.detailedAnalysis?.aroma?.categories?.other || []}
                           onChange={(values) => handleAromaCategoryChange('other', values)}
                           placeholder="革、タバコ、動物系..."
                           maxTags={8}
@@ -752,7 +752,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="taste-attack">アタック（第一印象）</label>
                       <textarea
                         id="taste-attack"
-                        value={formData.detailedAnalysis?.taste.attack || ''}
+                        value={formData.detailedAnalysis?.taste?.attack || ''}
                         onChange={(e) => handleDetailedAnalysisChange('taste', 'attack', e.target.value)}
                         placeholder="口に含んだ瞬間の印象..."
                         rows={2}
@@ -763,7 +763,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="taste-development">展開</label>
                       <textarea
                         id="taste-development"
-                        value={formData.detailedAnalysis?.taste.development || ''}
+                        value={formData.detailedAnalysis?.taste?.development || ''}
                         onChange={(e) => handleDetailedAnalysisChange('taste', 'development', e.target.value)}
                         placeholder="味わいの変化、中盤の印象..."
                         rows={2}
@@ -774,7 +774,7 @@ export default function AddTastingRecordPage() {
                       <label htmlFor="taste-finish">フィニッシュ</label>
                       <textarea
                         id="taste-finish"
-                        value={formData.detailedAnalysis?.taste.finish || ''}
+                        value={formData.detailedAnalysis?.taste?.finish || ''}
                         onChange={(e) => handleDetailedAnalysisChange('taste', 'finish', e.target.value)}
                         placeholder="余韻の特徴..."
                         rows={2}
@@ -794,14 +794,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.taste.finishLength || 3}
+                          value={formData.detailedAnalysis?.taste?.finishLength || 3}
                           onChange={(e) => handleDetailedAnalysisChange('taste', 'finishLength', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>短い</span>
                           <span>長い</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste.finishLength || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.taste?.finishLength || 3}</div>
                       </div>
                     </div>
 
@@ -816,14 +816,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.taste.balance || 3}
+                          value={formData.detailedAnalysis?.taste?.balance || 3}
                           onChange={(e) => handleDetailedAnalysisChange('taste', 'balance', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>アンバランス</span>
                           <span>完璧</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste.balance || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.taste?.balance || 3}</div>
                       </div>
                     </div>
 
@@ -838,14 +838,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.taste.complexity || 3}
+                          value={formData.detailedAnalysis?.taste?.complexity || 3}
                           onChange={(e) => handleDetailedAnalysisChange('taste', 'complexity', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>単純</span>
                           <span>複雑</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.taste.complexity || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.taste?.complexity || 3}</div>
                       </div>
                     </div>
                   </div>
@@ -870,14 +870,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.structure.sweetness || 1}
+                          value={formData.detailedAnalysis?.structure?.sweetness || 1}
                           onChange={(e) => handleDetailedAnalysisChange('structure', 'sweetness', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>辛口</span>
                           <span>甘口</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure.sweetness || 1}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.structure?.sweetness || 1}</div>
                       </div>
                     </div>
 
@@ -892,14 +892,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.structure.acidity || 3}
+                          value={formData.detailedAnalysis?.structure?.acidity || 3}
                           onChange={(e) => handleDetailedAnalysisChange('structure', 'acidity', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>低い</span>
                           <span>高い</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure.acidity || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.structure?.acidity || 3}</div>
                       </div>
                     </div>
 
@@ -915,14 +915,14 @@ export default function AddTastingRecordPage() {
                             min="1"
                             max="5"
                             step="1"
-                            value={formData.detailedAnalysis?.structure.tannin || 3}
+                            value={formData.detailedAnalysis?.structure?.tannin || 3}
                             onChange={(e) => handleDetailedAnalysisChange('structure', 'tannin', parseInt(e.target.value))}
                           />
                           <div className="slider-labels">
                             <span>軽い</span>
                             <span>強い</span>
                           </div>
-                          <div className="slider-value">{formData.detailedAnalysis?.structure.tannin || 3}</div>
+                          <div className="slider-value">{formData.detailedAnalysis?.structure?.tannin || 3}</div>
                         </div>
                       </div>
                     )}
@@ -938,14 +938,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.structure.alcohol || 3}
+                          value={formData.detailedAnalysis?.structure?.alcohol || 3}
                           onChange={(e) => handleDetailedAnalysisChange('structure', 'alcohol', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>軽い</span>
                           <span>強い</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure.alcohol || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.structure?.alcohol || 3}</div>
                       </div>
                     </div>
 
@@ -960,14 +960,14 @@ export default function AddTastingRecordPage() {
                           min="1"
                           max="5"
                           step="1"
-                          value={formData.detailedAnalysis?.structure.body || 3}
+                          value={formData.detailedAnalysis?.structure?.body || 3}
                           onChange={(e) => handleDetailedAnalysisChange('structure', 'body', parseInt(e.target.value))}
                         />
                         <div className="slider-labels">
                           <span>ライト</span>
                           <span>フル</span>
                         </div>
-                        <div className="slider-value">{formData.detailedAnalysis?.structure.body || 3}</div>
+                        <div className="slider-value">{formData.detailedAnalysis?.structure?.body || 3}</div>
                       </div>
                     </div>
                   </div>
@@ -1135,9 +1135,9 @@ export default function AddTastingRecordPage() {
                   !formData.producer || 
                   (formData.mode === 'quick' && !formData.quickNotes) ||
                   (formData.mode === 'detailed' && (
-                    !formData.detailedAnalysis?.appearance.color ||
-                    !formData.detailedAnalysis?.aroma.firstImpression ||
-                    !formData.detailedAnalysis?.taste.attack
+                    !formData.detailedAnalysis?.appearance?.color ||
+                    !formData.detailedAnalysis?.aroma?.firstImpression ||
+                    !formData.detailedAnalysis?.taste?.attack
                   ))
                 }
               >

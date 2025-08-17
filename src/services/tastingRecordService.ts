@@ -16,6 +16,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 import firebaseService from './firebase'
+import { AppError } from '../types/error'
 import type { TastingRecord, WineMatch, PopularWine } from '../types'
 
 /**
@@ -67,7 +68,29 @@ class TastingRecordService {
       return newRecord
     } catch (error) {
       console.error('Failed to create tasting record:', error)
-      throw new Error(`テイスティング記録の作成に失敗しました: ${error}`)
+      
+      if (error instanceof Error && error.message.includes('permission-denied')) {
+        throw new AppError({
+          code: 'firestore/permission-denied',
+          severity: 'medium',
+          category: 'permission',
+          userMessage: 'テイスティング記録を作成する権限がありません',
+          technicalMessage: error.message,
+          originalError: error,
+          context: { userId, operation: 'createRecord' }
+        })
+      }
+      
+      throw new AppError({
+        code: 'firestore/internal',
+        severity: 'high',
+        category: 'database',
+        userMessage: 'テイスティング記録の作成に失敗しました',
+        technicalMessage: error instanceof Error ? error.message : String(error),
+        originalError: error instanceof Error ? error : undefined,
+        context: { userId, operation: 'createRecord' },
+        retryable: true
+      })
     }
   }
 
@@ -94,7 +117,30 @@ class TastingRecordService {
       return null
     } catch (error) {
       console.error('Failed to get tasting record:', error)
-      throw new Error(`テイスティング記録の取得に失敗しました: ${error}`)
+      
+      if (error instanceof Error && error.message.includes('not-found')) {
+        throw new AppError({
+          code: 'firestore/not-found',
+          severity: 'low',
+          category: 'user',
+          userMessage: 'テイスティング記録が見つかりません',
+          technicalMessage: error.message,
+          originalError: error,
+          context: { recordId, operation: 'getRecord' },
+          shouldReport: false
+        })
+      }
+      
+      throw new AppError({
+        code: 'firestore/internal',
+        severity: 'medium',
+        category: 'database',
+        userMessage: 'テイスティング記録の取得に失敗しました',
+        technicalMessage: error instanceof Error ? error.message : String(error),
+        originalError: error instanceof Error ? error : undefined,
+        context: { recordId, operation: 'getRecord' },
+        retryable: true
+      })
     }
   }
 
@@ -333,7 +379,8 @@ class TastingRecordService {
 
       // 国別カウント
       const countryCounts = records.reduce((acc, r) => {
-        acc[r.country] = (acc[r.country] || 0) + 1
+        const country = r.country || 'Unknown'
+        acc[country] = (acc[country] || 0) + 1
         return acc
       }, {} as { [key: string]: number })
       const favoriteCountry = Object.keys(countryCounts).reduce((a, b) => 
@@ -506,10 +553,10 @@ class TastingRecordService {
             wine: {
               wineName: record.wineName,
               producer: record.producer,
-              country: record.country,
-              region: record.region,
-              type: record.type,
-              color: record.color,
+              country: record.country || '',
+              region: record.region || '',
+              type: record.type as any,
+              color: (record.color || record.type) as any,
               vintage: record.vintage,
               alcoholContent: record.alcoholContent,
               price: record.price,
@@ -604,10 +651,10 @@ class TastingRecordService {
             wine: {
               wineName: record.wineName,
               producer: record.producer,
-              country: record.country,
-              region: record.region,
-              type: record.type,
-              color: record.color,
+              country: record.country || '',
+              region: record.region || '',
+              type: record.type as any,
+              color: (record.color || record.type) as any,
               vintage: record.vintage,
               alcoholContent: record.alcoholContent,
               price: record.price,
