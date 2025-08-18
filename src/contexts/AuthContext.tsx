@@ -31,7 +31,7 @@ interface AuthContextType {
   clearError: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext)
