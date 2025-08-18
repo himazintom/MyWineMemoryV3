@@ -1,5 +1,23 @@
 {
   "projects": {
-    "default": "mywinememoryv3"
+    "default": "mywinememoryv3",
+    "staging": "mywinememoryv3-staging",
+    "production": "mywinememoryv3"
+  },
+  "targets": {
+    "mywinememoryv3": {
+      "hosting": {
+        "production": [
+          "mywinememoryv3"
+        ]
+      }
+    },
+    "mywinememoryv3-staging": {
+      "hosting": {
+        "staging": [
+          "mywinememoryv3-staging"
+        ]
+      }
+    }
   }
 }

@@ -1,39 +1,25 @@
 import { openDB } from 'idb'
-import type { DBSchema, IDBPDatabase } from 'idb'
-import type { TastingRecord, User } from '../types'
+import type { IDBPDatabase } from 'idb'
+import type { TastingRecord } from '../types'
 
 // IndexedDB のスキーマ定義
-interface OfflineDB extends DBSchema {
+interface OfflineDB {
   tastingRecords: {
     key: string
-    value: TastingRecord & { 
-      isOffline: boolean
-      lastModified: number
-      conflictData?: TastingRecord
-    }
+    value: any
     indexes: { 
-      'userId': string
-      'isOffline': boolean
-      'lastModified': number
+      'by-userId': string
+      'by-isOffline': boolean  
+      'by-lastModified': number
     }
   }
   userProfile: {
     key: string
-    value: User & { 
-      isOffline: boolean
-      lastModified: number
-    }
+    value: any
   }
   syncQueue: {
     key: number
-    value: {
-      type: 'CREATE' | 'UPDATE' | 'DELETE'
-      collection: string
-      documentId: string
-      data: any
-      timestamp: number
-      retryCount: number
-    }
+    value: any
     indexes: {
       'timestamp': number
       'collection': string
@@ -41,11 +27,7 @@ interface OfflineDB extends DBSchema {
   }
   appSettings: {
     key: string
-    value: {
-      lastSyncTime: number
-      isOnline: boolean
-      autoSync: boolean
-    }
+    value: any
   }
 }
 
@@ -54,7 +36,7 @@ class OfflineService {
   private isOnline = navigator.onLine
   private syncInProgress = false
   private maxRetries = 3
-  private retryDelay = 1000 // 1秒
+  // private retryDelay = 1000 // 1秒
 
   /**
    * IndexedDB の初期化
@@ -68,9 +50,9 @@ class OfflineService {
           // テイスティング記録ストア
           if (!db.objectStoreNames.contains('tastingRecords')) {
             const recordStore = db.createObjectStore('tastingRecords', { keyPath: 'id' })
-            recordStore.createIndex('userId', 'userId')
-            recordStore.createIndex('isOffline', 'isOffline')
-            recordStore.createIndex('lastModified', 'lastModified')
+            recordStore.createIndex('by-userId', 'userId')
+            recordStore.createIndex('by-isOffline', 'isOffline')
+            recordStore.createIndex('by-lastModified', 'lastModified')
           }
 
           // ユーザープロフィールストア
@@ -205,7 +187,7 @@ class OfflineService {
   async getOfflineTastingRecords(userId: string): Promise<TastingRecord[]> {
     if (!this.db) await this.initialize()
 
-    const records = await this.db!.getAllFromIndex('tastingRecords', 'userId', userId)
+    const records = await this.db!.getAllFromIndex('tastingRecords', 'by-userId', userId)
     return records.map(record => ({
       ...record,
       isOffline: record.isOffline

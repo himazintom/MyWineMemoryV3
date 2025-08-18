@@ -703,6 +703,33 @@ class GamificationService {
       throw new Error(`アクティビティ履歴の取得に失敗しました: ${error}`)
     }
   }
+
+  /**
+   * XPからレベルを計算
+   */
+  calculateLevel(totalXP: number): number {
+    if (totalXP <= 0) return 1
+    
+    // レベル計算式: level = floor(log(totalXP / 100) / log(1.2)) + 1
+    // 100XPから開始し、1.2倍ずつ増加
+    const baseXP = 100
+    const multiplier = 1.2
+    
+    return Math.floor(Math.log(totalXP / baseXP) / Math.log(multiplier)) + 1
+  }
+
+  /**
+   * レベルに必要なXPを計算
+   */
+  getXPForLevel(level: number): number {
+    if (level <= 1) return 0
+    
+    // レベルに必要なXP = 100 * (1.2 ^ (level - 1))
+    const baseXP = 100
+    const multiplier = 1.2
+    
+    return Math.floor(baseXP * Math.pow(multiplier, level - 1))
+  }
 }
 
 // シングルトンインスタンスをエクスポート

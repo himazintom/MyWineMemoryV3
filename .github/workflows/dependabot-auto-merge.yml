@@ -1,0 +1,60 @@
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  dependabot-auto-merge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm run test -- --watchAll=false
+        
+      - name: Run type checking
+        run: npm run type-check
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Check security vulnerabilities
+        run: npm audit --audit-level=high
+        
+      - name: Get dependency type
+        id: dependency-type
+        run: |
+          if echo "${{ github.event.pull_request.title }}" | grep -q "patch\|minor"; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=major" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Auto-approve and merge (patch/minor)
+        if: steps.dependency-type.outputs.type == 'minor'
+        run: |
+          gh pr review --approve "${{ github.event.pull_request.number }}"
+          gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Request review (major)
+        if: steps.dependency-type.outputs.type == 'major'
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --body "⚠️ This is a major dependency update. Manual review required."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

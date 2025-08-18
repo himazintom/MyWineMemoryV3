@@ -16,6 +16,7 @@ export default {
       statements: 70
     }
   },
+  setupFiles: ['<rootDir>/src/test/jest.setup.js'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   testMatch: [
     '**/__tests__/**/*.{ts,tsx}',

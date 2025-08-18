@@ -7,8 +7,7 @@ import {
   query,
   where,
   getDocs,
-  serverTimestamp,
-  Timestamp
+  serverTimestamp
 } from 'firebase/firestore'
 import firebaseService from './firebase'
 import type { QuizQuestion } from '../types'

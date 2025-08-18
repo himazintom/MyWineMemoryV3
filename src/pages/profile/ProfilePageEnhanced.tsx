@@ -7,7 +7,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import gamificationService from '../../services/gamificationService'
 import learningProgressService from '../../services/learningProgressService'
 import tastingRecordService from '../../services/tastingRecordService'
-import type { Badge, UserBadge } from '../../types'
+import type { UserBadge } from '../../types'
 
 export default function ProfilePageEnhanced() {
   const { userProfile, isGuestMode, signOut, updateUserProfile, error, clearError } = useAuth()
@@ -62,7 +62,7 @@ export default function ProfilePageEnhanced() {
       try {
         // XPとレベル情報
         const xpInfo = await gamificationService.getUserXP(userProfile.uid)
-        const level = gamificationService.calculateLevel(xpInfo.totalXP)
+        const level = gamificationService.calculateLevel(xpInfo?.totalXPEarned || 0)
         
         // バッジ情報
         const badges = await gamificationService.getUserBadges(userProfile.uid)
@@ -80,7 +80,7 @@ export default function ProfilePageEnhanced() {
           ...xpInfo,
           level,
           nextLevelXP: gamificationService.getXPForLevel(level + 1),
-          progress: (xpInfo.totalXP - gamificationService.getXPForLevel(level)) / 
+          progress: ((xpInfo?.totalXPEarned || 0) - gamificationService.getXPForLevel(level)) / 
                    (gamificationService.getXPForLevel(level + 1) - gamificationService.getXPForLevel(level)) * 100
         })
         setUserBadges(badges)
@@ -184,7 +184,7 @@ export default function ProfilePageEnhanced() {
                 key={userBadge.badgeId}
                 className={`badge-item ${userBadge.badge?.rarity}`}
               >
-                <div className="badge-icon">{userBadge.badge?.icon}</div>
+                <div className="badge-icon">🏆</div>
                 <div className="badge-name">{userBadge.badge?.name}</div>
                 <div className="badge-date">
                   {userBadge.earnedAt.toLocaleDateString()}
@@ -257,7 +257,7 @@ export default function ProfilePageEnhanced() {
               <Button
                 type="submit"
                 variant="primary"
-                loading={isUpdating}
+                isLoading={isUpdating}
                 disabled={isUpdating}
               >
                 保存

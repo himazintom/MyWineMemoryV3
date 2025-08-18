@@ -42,7 +42,7 @@ export function useDebounceSearch(
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState<SearchFilters>({})
-  const [searchOptions, setSearchOptions] = useState<SearchOptions>({
+  const [searchOptions] = useState<SearchOptions>({
     limitCount: 20,
     orderByField: 'tastingDate',
     orderDirection: 'desc'

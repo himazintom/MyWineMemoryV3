@@ -1,12 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    
+    // Sentry plugin for sourcemap upload
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: {
+        assets: './dist/**',
+        ignore: ['node_modules'],
+        filesToDeleteAfterUpload: './dist/**/*.map'
+      }
+    }),
+    
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
@@ -93,7 +107,8 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-          'chart-vendor': ['chart.js', 'react-chartjs-2']
+          'chart-vendor': ['chart.js', 'react-chartjs-2'],
+          'sentry-vendor': ['@sentry/react']
         }
       }
     }

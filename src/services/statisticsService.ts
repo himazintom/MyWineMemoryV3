@@ -189,7 +189,11 @@ class StatisticsService {
 
     const now = new Date()
     return {
-      ...basicStats,
+      totalRecords: basicStats.totalRecords || 0,
+      averageRating: basicStats.averageRating || 0,
+      totalSpent: basicStats.totalSpent || 0,
+      uniqueWines: basicStats.uniqueWines || 0,
+      uniqueProducers: basicStats.uniqueProducers || 0,
       monthlyStats,
       yearlyStats,
       countryAnalysis,
@@ -589,7 +593,7 @@ class StatisticsService {
   // ヘルパーメソッド
   // ===============================
 
-  private getTopItem<T>(records: TastingRecord[], field: keyof TastingRecord): [string, number][] {
+  private getTopItem(records: TastingRecord[], field: keyof TastingRecord): [string, number][] {
     const counts = new Map<string, number>()
     records.forEach(record => {
       const value = String(record[field] || 'Unknown')
@@ -627,7 +631,7 @@ class StatisticsService {
     return result
   }
 
-  private calculateMonthlyTrends(records: TastingRecord[]): {
+  private calculateMonthlyTrends(_records: TastingRecord[]): {
     rating: TrendData[]
     price: TrendData[]
     volume: TrendData[]
@@ -642,7 +646,7 @@ class StatisticsService {
     }
   }
 
-  private calculatePreferenceEvolution(records: TastingRecord[]): PreferenceEvolution[] {
+  private calculatePreferenceEvolution(_records: TastingRecord[]): PreferenceEvolution[] {
     // 実装の簡略化のため、空配列を返す
     return []
   }
