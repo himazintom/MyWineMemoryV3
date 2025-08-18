@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { NotificationSettings } from '../../components/NotificationSettings'
+import { ModelSelector } from '../../components/admin/ModelSelector'
 import Button from '../../components/common/Button'
 import ErrorMessage from '../../components/common/ErrorMessage'
 
 interface SettingsTab {
-  id: 'appearance' | 'notifications' | 'privacy'
+  id: 'appearance' | 'notifications' | 'privacy' | 'ai'
   label: string
   icon: string
 }
@@ -13,6 +14,7 @@ interface SettingsTab {
 const SETTINGS_TABS: SettingsTab[] = [
   { id: 'appearance', label: '外観', icon: '🎨' },
   { id: 'notifications', label: '通知', icon: '🔔' },
+  { id: 'ai', label: 'AI設定', icon: '🤖' },
   { id: 'privacy', label: 'プライバシー', icon: '🔒' }
 ]
 
@@ -107,6 +109,17 @@ export default function SettingsPage() {
         return (
           <div className="tab-content">
             <NotificationSettings />
+          </div>
+        )
+
+      case 'ai':
+        return (
+          <div className="tab-content">
+            <div className="section-header">
+              <h2>🤖 AI設定</h2>
+              <p>AIモデルの選択と設定を管理します</p>
+            </div>
+            <ModelSelector showOnlyFree={true} />
           </div>
         )
 

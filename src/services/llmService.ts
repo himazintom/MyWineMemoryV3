@@ -1,10 +1,22 @@
 import type { TastingRecord } from '../types'
 
+export interface LLMModel {
+  id: string
+  name: string
+  provider: 'openrouter' | 'groq'
+  modelId: string
+  maxTokens: number
+  costPer1MTokens: number
+  description: string
+  isFree: boolean
+}
+
 export interface LLMConfig {
   provider: 'openrouter' | 'groq'
   apiKey: string
   baseURL: string
   model: string
+  availableModels: LLMModel[]
 }
 
 export interface TasteProfileAnalysis {
@@ -52,6 +64,7 @@ export class LLMService {
   private config: LLMConfig
   private requestCount: number = 0
   private lastResetTime: number = Date.now()
+  private currentModelId: string = 'openai-gpt-oss-free'
   
   static getInstance(): LLMService {
     if (!LLMService.instance) {
@@ -65,8 +78,150 @@ export class LLMService {
       provider: 'openrouter',
       apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
       baseURL: 'https://openrouter.ai/api/v1',
-      model: 'anthropic/claude-3-haiku'
+      model: 'openai/gpt-oss-20b:free',
+      availableModels: this.getAvailableModelsList()
     }
+    
+    // Firestoreから現在のモデル設定を読み込み
+    this.loadCurrentModel()
+  }
+
+  /**
+   * 利用可能なモデル一覧
+   */
+  private getAvailableModelsList(): LLMModel[] {
+    return [
+      {
+        id: 'openai-gpt-oss-free',
+        name: 'GPT OSS 20B (無料)',
+        provider: 'openrouter',
+        modelId: 'openai/gpt-oss-20b:free',
+        maxTokens: 1000,
+        costPer1MTokens: 0,
+        description: 'OpenAI製の軽量オープンソースモデル',
+        isFree: true
+      },
+      {
+        id: 'openai-gpt4o-free',
+        name: 'GPT-4o Mini (無料)',
+        provider: 'openrouter',
+        modelId: 'openai/gpt-4o-mini-2024-07-18',
+        maxTokens: 1000,
+        costPer1MTokens: 0,
+        description: '高速で軽量なGPT-4oの無料版',
+        isFree: true
+      },
+      {
+        id: 'meta-llama-free',
+        name: 'Llama 3.1 8B (無料)',
+        provider: 'openrouter',
+        modelId: 'meta-llama/llama-3.1-8b-instruct:free',
+        maxTokens: 1000,
+        costPer1MTokens: 0,
+        description: 'Meta製の高性能オープンソースモデル',
+        isFree: true
+      },
+      {
+        id: 'mistral-free',
+        name: 'Mistral 7B (無料)',
+        provider: 'openrouter',
+        modelId: 'mistralai/mistral-7b-instruct:free',
+        maxTokens: 1000,
+        costPer1MTokens: 0,
+        description: 'ヨーロッパ発の高効率モデル',
+        isFree: true
+      },
+      {
+        id: 'groq-llama-free',
+        name: 'Groq Llama 3.1 70B (無料)',
+        provider: 'groq',
+        modelId: 'llama-3.1-70b-versatile',
+        maxTokens: 1000,
+        costPer1MTokens: 0,
+        description: '超高速推論のGroq版Llama',
+        isFree: true
+      },
+      {
+        id: 'claude-haiku',
+        name: 'Claude 3 Haiku (有料)',
+        provider: 'openrouter',
+        modelId: 'anthropic/claude-3-haiku',
+        maxTokens: 1000,
+        costPer1MTokens: 250,
+        description: 'Anthropic製の高品質モデル',
+        isFree: false
+      }
+    ]
+  }
+
+  /**
+   * Firestoreから現在のモデル設定を読み込み
+   */
+  private async loadCurrentModel(): Promise<void> {
+    try {
+      // 動的インポートでadminServiceを読み込み（循環依存回避）
+      const { adminService } = await import('./adminService')
+      const modelId = await adminService.getCurrentModel()
+      
+      if (modelId) {
+        await this.switchModel(modelId)
+      }
+    } catch (error) {
+      console.warn('Failed to load current model from Firestore, using default:', error)
+    }
+  }
+
+  /**
+   * モデルの切り替え
+   */
+  async switchModel(modelId: string): Promise<boolean> {
+    const targetModel = this.config.availableModels.find(m => m.id === modelId)
+    if (!targetModel) {
+      console.error('Model not found:', modelId)
+      return false
+    }
+
+    try {
+      this.currentModelId = modelId
+      this.config.model = targetModel.modelId
+      this.config.provider = targetModel.provider
+      
+      // Groqの場合はベースURLを変更
+      if (targetModel.provider === 'groq') {
+        this.config.baseURL = 'https://api.groq.com/openai/v1'
+        this.config.apiKey = import.meta.env.VITE_GROQ_API_KEY || ''
+      } else {
+        this.config.baseURL = 'https://openrouter.ai/api/v1'
+        this.config.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || ''
+      }
+
+      console.log(`Switched to model: ${targetModel.name}`)
+      return true
+    } catch (error) {
+      console.error('Failed to switch model:', error)
+      return false
+    }
+  }
+
+  /**
+   * 現在のモデル情報を取得
+   */
+  getCurrentModel(): LLMModel | null {
+    return this.config.availableModels.find(m => m.id === this.currentModelId) || null
+  }
+
+  /**
+   * 利用可能なモデル一覧を取得
+   */
+  getAvailableModels(): LLMModel[] {
+    return this.config.availableModels
+  }
+
+  /**
+   * 無料モデルのみを取得
+   */
+  getFreeModels(): LLMModel[] {
+    return this.config.availableModels.filter(m => m.isFree)
   }
 
   /**

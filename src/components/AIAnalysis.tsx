@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { llmService, type TasteProfileAnalysis, type WineRecommendation } from '../services/llmService'
+import { llmService, type TasteProfileAnalysis, type WineRecommendation, type LLMModel } from '../services/llmService'
 import { useAuth } from '../contexts/AuthContext'
 import { tastingRecordService } from '../services/tastingRecordService'
 import LoadingSpinner from './common/LoadingSpinner'
@@ -22,6 +22,7 @@ export const AIAnalysis: React.FC<AIAnalysisProps> = ({
   const [tasteProfile, setTasteProfile] = useState<TasteProfileAnalysis | null>(null)
   const [recommendations, setRecommendations] = useState<WineRecommendation[]>([])
   const [usageCount, setUsageCount] = useState(llmService.getUsageCount())
+  const [currentModel] = useState<LLMModel | null>(llmService.getCurrentModel())
 
   const isPremium = userProfile?.subscription?.plan === 'premium'
   const maxUsage = isPremium ? 100 : 10
@@ -127,13 +128,22 @@ export const AIAnalysis: React.FC<AIAnalysisProps> = ({
     <div className={`ai-analysis ${className}`}>
       <div className="analysis-header">
         <h3>🤖 AI ワイン分析</h3>
-        <div className="usage-info">
-          <span className="usage-count">
-            {usageCount}/{maxUsage} 回使用
-          </span>
-          <span className="plan-badge">
-            {isPremium ? 'Premium' : 'Free'}
-          </span>
+        <div className="header-info">
+          <div className="model-info">
+            {currentModel && (
+              <span className="current-model">
+                🧠 {currentModel.name}
+              </span>
+            )}
+          </div>
+          <div className="usage-info">
+            <span className="usage-count">
+              {usageCount}/{maxUsage} 回使用
+            </span>
+            <span className="plan-badge">
+              {isPremium ? 'Premium' : 'Free'}
+            </span>
+          </div>
         </div>
       </div>
 
