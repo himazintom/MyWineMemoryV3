@@ -7,6 +7,7 @@ import ScrollToTop from './components/common/ScrollToTop'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ErrorProvider } from './contexts/ErrorContext'
+import AnalyticsWrapper from './components/AnalyticsWrapper'
 
 // Lazy load pages for better performance
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -24,6 +25,8 @@ const QuizPage = lazy(() => import('./pages/quiz/QuizPage'))
 const QuizGamePage = lazy(() => import('./pages/quiz/QuizGamePage'))
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
+const InitializationPanel = lazy(() => import('./components/InitializationPanel'))
 
 function App() {
   return (
@@ -31,9 +34,10 @@ function App() {
       <ErrorProvider>
         <ThemeProvider>
           <AuthProvider>
-            <Router>
-          <ScrollToTop />
-          <Layout>
+            <AnalyticsWrapper>
+              <Router>
+                <ScrollToTop />
+                <Layout>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public routes */}
@@ -59,13 +63,16 @@ function App() {
               <Route path="/quiz/level/:level" element={<QuizGamePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/admin/init" element={<InitializationPanel />} />
               
               {/* 404 fallback */}
               <Route path="*" element={<div>Page not found</div>} />
             </Routes>
           </Suspense>
-        </Layout>
-            </Router>
+                </Layout>
+              </Router>
+            </AnalyticsWrapper>
           </AuthProvider>
         </ThemeProvider>
       </ErrorProvider>

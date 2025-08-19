@@ -5,9 +5,8 @@ import { AppError, ErrorType } from '../../types/error'
 import { ErrorProvider } from '../../contexts/ErrorContext'
 
 describe('useErrorHandler', () => {
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <ErrorProvider>{children}</ErrorProvider>
-  )
+  const wrapper = ({ children }: { children: React.ReactNode }) => 
+    React.createElement(ErrorProvider, null, children)
 
   it('should initialize with no error', () => {
     const { result } = renderHook(() => useErrorHandler(), { wrapper })
