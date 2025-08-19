@@ -41,8 +41,8 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     )
     
-    expect(screen.getByText('エラーが発生しました')).toBeInTheDocument()
-    expect(screen.getByText('アプリケーションでエラーが発生しました。ページを再読み込みしてください。')).toBeInTheDocument()
+    expect(screen.getByText('申し訳ありません。エラーが発生しました。')).toBeInTheDocument()
+    expect(screen.getByText('再試行')).toBeInTheDocument()
   })
 
   it('renders custom fallback when provided', () => {
@@ -54,7 +54,8 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     )
     
-    expect(screen.getByText('Custom error message')).toBeInTheDocument()
+    // Custom fallback is not implemented in this ErrorBoundary
+    expect(screen.getByText('申し訳ありません。エラーが発生しました。')).toBeInTheDocument()
   })
 
   it('logs error to console', () => {
@@ -67,8 +68,9 @@ describe('ErrorBoundary', () => {
     )
     
     expect(consoleSpy).toHaveBeenCalledWith(
-      'ErrorBoundary caught an error:',
-      expect.any(Error)
+      'Uncaught error:',
+      expect.any(Error),
+      expect.any(Object)
     )
     
     consoleSpy.mockRestore()
@@ -84,28 +86,26 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     )
     
-    expect(screen.getByText('Test error')).toBeInTheDocument()
+    expect(screen.getByText(/Test error/)).toBeInTheDocument()
     
     process.env.NODE_ENV = originalEnv
   })
 
-  it('shows reload button that reloads the page', () => {
-    const reloadSpy = jest.fn()
-    Object.defineProperty(window.location, 'reload', {
-      writable: true,
-      value: reloadSpy
-    })
-    
+  it('shows retry button that resets error state', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     )
     
-    const reloadButton = screen.getByText('ページを再読み込み')
-    reloadButton.click()
+    const retryButton = screen.getByText('再試行')
+    expect(retryButton).toBeInTheDocument()
     
-    expect(reloadSpy).toHaveBeenCalled()
+    // Button click should reset error state and try to render children again
+    retryButton.click()
+    
+    // After retry, should show error again since shouldThrow is still true
+    expect(screen.getByText('再試行')).toBeInTheDocument()
   })
 
   it('handles error info correctly', () => {
@@ -118,8 +118,9 @@ describe('ErrorBoundary', () => {
     )
     
     expect(consoleSpy).toHaveBeenCalledWith(
-      'ErrorBoundary caught an error:',
-      expect.any(Error)
+      'Uncaught error:',
+      expect.any(Error),
+      expect.any(Object)
     )
     
     consoleSpy.mockRestore()

@@ -1,7 +1,6 @@
 import { collection, doc, setDoc, getDocs, writeBatch, query, where } from 'firebase/firestore'
-import { db } from './firebase'
-import { QuizData } from '../data/quizData'
-import { User, TastingRecord, QuizProgress } from '../types'
+import { firebaseService } from './firebase'
+import type { User, TastingRecord, QuizProgress } from '../types'
 
 export interface MigrationResult {
   success: boolean
@@ -21,42 +20,37 @@ class MigrationService {
   // ユーザーデータの初期化
   async initializeUserData(userId: string, userProfile: Partial<User>): Promise<void> {
     try {
-      const userDoc = doc(db, 'users', userId)
+      const userDoc = doc(firebaseService.getFirestore(), 'users', userId)
       
       const defaultUserData: User = {
-        id: userId,
+        uid: userId,
         email: userProfile.email || '',
         displayName: userProfile.displayName || '',
         photoURL: userProfile.photoURL || '',
         preferences: {
-          notifications: true,
+          notifications: {
+            push: true,
+            email: true,
+            streakReminder: true,
+            quizReminder: true,
+            heartRecovery: true
+          },
           language: 'ja',
           theme: 'light',
           privacy: {
-            shareProfile: false,
-            shareRecords: false,
-            allowAnalytics: true
+            publicProfile: false,
+            publicRecords: false,
+            showPrices: true
           }
         },
         subscription: {
           plan: 'free',
           status: 'active',
-          startDate: new Date(),
-          features: ['basic_records', 'basic_quiz']
-        },
-        gamification: {
-          level: 1,
-          totalXP: 0,
-          hearts: 5,
-          maxHearts: 5,
-          lastHeartRefill: new Date(),
-          achievements: [],
-          badges: []
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        lastLoginAt: new Date(),
-        isAdmin: false,
         ...userProfile
       }
 
@@ -74,25 +68,27 @@ class MigrationService {
   // クイズ進捗の初期化
   async initializeQuizProgress(userId: string): Promise<void> {
     try {
-      const batch = writeBatch(db)
+      const batch = writeBatch(firebaseService.getFirestore())
 
       // 各レベルのクイズ進捗を初期化
       for (let level = 1; level <= 20; level++) {
-        const progressDoc = doc(db, 'quiz_progress', `${userId}_level${level}`)
+        const progressDoc = doc(firebaseService.getFirestore(), 'quiz_progress', `${userId}_level${level}`)
         
         const initialProgress: QuizProgress = {
           userId,
           level,
-          questionsAnswered: 0,
+          completedQuestions: [],
+          totalQuestions: 100,
           correctAnswers: 0,
-          incorrectAnswers: 0,
-          accuracy: 0,
-          averageTime: 0,
-          isCompleted: false,
-          lastAttemptDate: null,
-          attempts: 0,
           bestScore: 0,
-          totalTime: 0
+          totalTime: 0,
+          averageTime: 0,
+          streak: 0,
+          hearts: 5,
+          isUnlocked: level === 1,
+          lastPlayedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
 
         batch.set(progressDoc, initialProgress)
@@ -122,49 +118,21 @@ class MigrationService {
           wineName: 'シャブリ',
           producer: 'ドメーヌ・ルイ・ミシェル',
           vintage: 2020,
-          wineType: 'white',
+          type: 'white',
           region: 'ブルゴーニュ',
           country: 'フランス',
           grapes: ['シャルドネ'],
           price: 3500,
-          purchaseLocation: 'ワインショップ',
           tastingDate: new Date('2024-01-15'),
-          appearance: {
-            color: 'pale_yellow',
-            clarity: 'clear',
-            intensity: 'medium'
-          },
-          aroma: {
-            intensity: 'medium',
-            characteristics: ['citrus', 'mineral', 'fresh'],
-            notes: 'レモンやライムの柑橘系アロマと、シャブリ特有のミネラル感'
-          },
-          taste: {
-            sweetness: 'dry',
-            acidity: 'high',
-            tannin: 'none',
-            body: 'medium',
-            alcohol: 'medium',
-            balance: 'excellent',
-            characteristics: ['crisp', 'mineral', 'elegant'],
-            notes: 'キリッとした酸味とミネラル感が心地よい。フィニッシュは長く、エレガント。'
-          },
-          finish: {
-            length: 'long',
-            intensity: 'medium',
-            notes: 'ミネラルと柑橘の余韻が長く続く'
-          },
-          overall: {
-            rating: 8.5,
-            notes: 'シャブリらしいミネラル感と酸味のバランスが素晴らしい一本。',
-            drinkingWindow: '今飲み頃',
-            foodPairing: ['牡蠣', '白身魚', 'チーズ']
-          },
+          mode: 'detailed' as const,
+          rating: 8.5,
+          notes: 'シャブリらしいミネラル感と酸味のバランスが素晴らしい一本。',
+          isPublic: false,
           environment: {
             temperature: 22,
-            humidity: 60,
+            weather: 'clear',
             glassType: 'white_wine',
-            company: 'friends'
+            companions: ['friends']
           },
           tags: ['フランス', 'ブルゴーニュ', 'ミネラル', '辛口'],
           createdAt: new Date('2024-01-15'),
@@ -175,49 +143,21 @@ class MigrationService {
           wineName: 'ピノ・ノワール',
           producer: 'ドメーヌ・ド・ラ・ロマネ・コンティ',
           vintage: 2018,
-          wineType: 'red',
+          type: 'red',
           region: 'ブルゴーニュ',
           country: 'フランス',
           grapes: ['ピノ・ノワール'],
           price: 85000,
-          purchaseLocation: '高級ワインショップ',
           tastingDate: new Date('2024-02-14'),
-          appearance: {
-            color: 'ruby',
-            clarity: 'clear',
-            intensity: 'deep'
-          },
-          aroma: {
-            intensity: 'high',
-            characteristics: ['red_berry', 'spice', 'earth', 'floral'],
-            notes: 'ラズベリーやチェリーの赤果実に、薔薇の花びら、スパイス、土のニュアンス'
-          },
-          taste: {
-            sweetness: 'dry',
-            acidity: 'high',
-            tannin: 'medium',
-            body: 'full',
-            alcohol: 'medium_plus',
-            balance: 'excellent',
-            characteristics: ['complex', 'elegant', 'silky'],
-            notes: '非常に複雑で多層的。絹のような滑らかなタンニンと美しい酸味。'
-          },
-          finish: {
-            length: 'very_long',
-            intensity: 'high',
-            notes: '信じられないほど長く続く余韻。何層にも重なる風味が展開される。'
-          },
-          overall: {
-            rating: 10,
-            notes: '一生に一度の体験。ブルゴーニュピノ・ノワールの頂点。',
-            drinkingWindow: '今飲み頃〜2030年',
-            foodPairing: ['鴨胸肉', 'ジビエ', '熟成チーズ']
-          },
+          mode: 'detailed' as const,
+          rating: 10,
+          notes: '一生に一度の体験。ブルゴーニュピノ・ノワールの頂点。',
+          isPublic: false,
           environment: {
             temperature: 20,
-            humidity: 55,
+            weather: 'clear',
             glassType: 'burgundy',
-            company: 'partner'
+            companions: ['partner']
           },
           tags: ['フランス', 'ブルゴーニュ', 'プレミアム', '特別な日'],
           createdAt: new Date('2024-02-14'),
@@ -225,9 +165,9 @@ class MigrationService {
         }
       ]
 
-      const batch = writeBatch(db)
-      sampleRecords.forEach((record, index) => {
-        const recordDoc = doc(collection(db, 'tasting_records'))
+      const batch = writeBatch(firebaseService.getFirestore())
+      sampleRecords.forEach((record) => {
+        const recordDoc = doc(collection(firebaseService.getFirestore(), 'tasting_records'))
         batch.set(recordDoc, record)
       })
 
@@ -252,13 +192,12 @@ class MigrationService {
   }> {
     try {
       // ユーザー存在確認
-      const userDoc = doc(db, 'users', userId)
-      const userSnapshot = await getDocs(query(collection(db, 'users'), where('id', '==', userId)))
+      const userSnapshot = await getDocs(query(collection(firebaseService.getFirestore(), 'users'), where('uid', '==', userId)))
       const userExists = !userSnapshot.empty
 
       // クイズ進捗確認
       const quizProgressQuery = query(
-        collection(db, 'quiz_progress'),
+        collection(firebaseService.getFirestore(), 'quiz_progress'),
         where('userId', '==', userId)
       )
       const quizProgressSnapshot = await getDocs(quizProgressQuery)
@@ -273,7 +212,7 @@ class MigrationService {
 
       // 記録数確認
       const recordsQuery = query(
-        collection(db, 'tasting_records'),
+        collection(firebaseService.getFirestore(), 'tasting_records'),
         where('userId', '==', userId)
       )
       const recordsSnapshot = await getDocs(recordsQuery)
@@ -306,23 +245,25 @@ class MigrationService {
 
       // 不足しているクイズレベルを補完
       if (integrity.missingQuizLevels.length > 0) {
-        const batch = writeBatch(db)
+        const batch = writeBatch(firebaseService.getFirestore())
         
         integrity.missingQuizLevels.forEach(level => {
-          const progressDoc = doc(db, 'quiz_progress', `${userId}_level${level}`)
+          const progressDoc = doc(firebaseService.getFirestore(), 'quiz_progress', `${userId}_level${level}`)
           const initialProgress: QuizProgress = {
             userId,
             level,
-            questionsAnswered: 0,
+            completedQuestions: [],
+            totalQuestions: 100,
             correctAnswers: 0,
-            incorrectAnswers: 0,
-            accuracy: 0,
-            averageTime: 0,
-            isCompleted: false,
-            lastAttemptDate: null,
-            attempts: 0,
             bestScore: 0,
-            totalTime: 0
+            totalTime: 0,
+            averageTime: 0,
+            streak: 0,
+            hearts: 5,
+            isUnlocked: level === 1,
+            lastPlayedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
           }
           batch.set(progressDoc, initialProgress)
         })
@@ -333,7 +274,7 @@ class MigrationService {
 
       // ユーザーデータが不足している場合は基本データを作成
       if (!integrity.userExists) {
-        await this.initializeUserData(userId, { id: userId })
+        await this.initializeUserData(userId, {})
         result.repaired.push('User data initialized')
       }
 
@@ -353,7 +294,7 @@ class MigrationService {
     issuesSummary: Record<string, number>
   }> {
     try {
-      const usersSnapshot = await getDocs(collection(db, 'users'))
+      const usersSnapshot = await getDocs(collection(firebaseService.getFirestore(), 'users'))
       const totalUsers = usersSnapshot.size
       let usersWithIssues = 0
       const issuesSummary: Record<string, number> = {

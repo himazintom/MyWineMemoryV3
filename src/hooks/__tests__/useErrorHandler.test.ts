@@ -1,7 +1,13 @@
 import React from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { useErrorHandler } from '../useErrorHandler'
-import { AppError, ErrorType } from '../../types/error'
+import { AppError } from '../../types/error'
+
+enum ErrorType {
+  VALIDATION = 'validation',
+  NETWORK = 'network',
+  PERMISSION = 'permission'
+}
 import { ErrorProvider } from '../../contexts/ErrorContext'
 
 describe('useErrorHandler', () => {

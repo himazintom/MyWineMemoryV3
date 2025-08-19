@@ -109,7 +109,7 @@ describe('TagInput', () => {
       />
     )
     
-    const input = screen.getByPlaceholderText('Enter tags')
+    const input = screen.getByPlaceholderText('最大2個まで')
     await user.type(input, 'tag3{enter}')
     
     expect(onChange).not.toHaveBeenCalled()

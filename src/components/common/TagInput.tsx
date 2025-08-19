@@ -2,7 +2,8 @@ import { useState, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 
 interface TagInputProps {
-  tags: string[]
+  tags?: string[]
+  value?: string[]
   onChange: (tags: string[]) => void
   placeholder?: string
   maxTags?: number
@@ -16,7 +17,8 @@ interface TagInputProps {
 }
 
 export default function TagInput({
-  tags,
+  tags: tagsProp,
+  value: valueProp,
   onChange,
   placeholder = 'タグを入力してEnterまたはカンマで追加',
   maxTags,
@@ -28,6 +30,8 @@ export default function TagInput({
   'aria-describedby': ariaDescribedBy,
   'aria-labelledby': ariaLabelledBy
 }: TagInputProps) {
+  // valueまたはtagsプロパティを使用（後方互換性）
+  const tags = valueProp || tagsProp || []
   const [inputValue, setInputValue] = useState('')
   const [focusedTagIndex, setFocusedTagIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -153,23 +157,21 @@ export default function TagInput({
           </span>
         ))}
         
-        {canAddMoreTags && (
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleInputKeyDown}
-            onFocus={handleInputFocus}
-            placeholder={tags.length === 0 ? placeholder : ''}
-            disabled={disabled}
-            className="tag-input"
-            aria-label={label || 'タグ入力'}
-            aria-describedby={ariaDescribedBy}
-            aria-labelledby={ariaLabelledBy}
-            autoComplete="off"
-          />
-        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          onFocus={handleInputFocus}
+          placeholder={canAddMoreTags ? placeholder : `最大${maxTags}個まで`}
+          disabled={disabled || !canAddMoreTags}
+          className="tag-input"
+          aria-label={label || 'タグ入力'}
+          aria-describedby={ariaDescribedBy}
+          aria-labelledby={ariaLabelledBy}
+          autoComplete="off"
+        />
       </div>
       
       {maxTags && (

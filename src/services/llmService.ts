@@ -1,5 +1,10 @@
 import type { TastingRecord } from '../types'
 
+// Helper function to get environment variables safely
+const getEnvVar = (key: string): string => {
+  return process.env[key] || ''
+}
+
 export interface LLMModel {
   id: string
   name: string
@@ -76,7 +81,7 @@ export class LLMService {
   private constructor() {
     this.config = {
       provider: 'openrouter',
-      apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+      apiKey: getEnvVar('VITE_OPENROUTER_API_KEY'),
       baseURL: 'https://openrouter.ai/api/v1',
       model: 'openai/gpt-oss-20b:free',
       availableModels: this.getAvailableModelsList()
@@ -189,10 +194,10 @@ export class LLMService {
       // Groqの場合はベースURLを変更
       if (targetModel.provider === 'groq') {
         this.config.baseURL = 'https://api.groq.com/openai/v1'
-        this.config.apiKey = import.meta.env.VITE_GROQ_API_KEY || ''
+        this.config.apiKey = getEnvVar('VITE_GROQ_API_KEY')
       } else {
         this.config.baseURL = 'https://openrouter.ai/api/v1'
-        this.config.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || ''
+        this.config.apiKey = getEnvVar('VITE_OPENROUTER_API_KEY')
       }
 
       console.log(`Switched to model: ${targetModel.name}`)

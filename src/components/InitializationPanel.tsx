@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { migrationService, InitializationResult } from '../services/migrationService'
+import { migrationService, type InitializationResult } from '../services/migrationService'
 import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from './common/LoadingSpinner'
 import ErrorMessage from './common/ErrorMessage'
@@ -20,7 +20,6 @@ const InitializationPanel: React.FC = () => {
 
     try {
       await migrationService.initializeUserData(currentUser.uid, {
-        id: currentUser.uid,
         email: currentUser.email || '',
         displayName: currentUser.displayName || '',
         photoURL: currentUser.photoURL || ''
@@ -195,7 +194,7 @@ const InitializationPanel: React.FC = () => {
       )}
 
       {/* 管理者向け機能 */}
-      {userProfile?.isAdmin && (
+      {userProfile?.subscription?.plan === 'premium' && (
         <div className="bg-white p-6 rounded-lg shadow mt-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">👑 管理者機能</h3>
           <p className="text-gray-600 mb-4">

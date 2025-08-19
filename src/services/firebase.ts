@@ -1,4 +1,9 @@
 import { initializeApp } from 'firebase/app'
+
+// Helper function to get environment variables safely
+const getEnvVar = (key: string): string => {
+  return process.env[key] || ''
+}
 import type { FirebaseApp } from 'firebase/app'
 import { 
   getAuth, 
@@ -45,13 +50,13 @@ import type { User } from '../types/user'
 
 // Firebase 設定オブジェクト
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: getEnvVar('VITE_FIREBASE_API_KEY'),
+  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: getEnvVar('VITE_FIREBASE_APP_ID'),
+  measurementId: getEnvVar('VITE_FIREBASE_MEASUREMENT_ID')
 }
 
 // 環境変数の検証
@@ -65,7 +70,7 @@ function validateEnvironment(): void {
     'VITE_FIREBASE_APP_ID'
   ]
   
-  const missing = requiredEnvVars.filter(envVar => !import.meta.env[envVar])
+  const missing = requiredEnvVars.filter(envVar => !getEnvVar(envVar))
   
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`)

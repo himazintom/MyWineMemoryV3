@@ -1172,6 +1172,7 @@ class TastingRecordService {
   }
 }
 
-// シングルトンインスタンスをエクスポート
+// シングルトンインスタンスとクラスをエクスポート
+export { TastingRecordService }
 export const tastingRecordService = TastingRecordService.getInstance()
 export default tastingRecordService

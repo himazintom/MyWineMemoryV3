@@ -1,13 +1,108 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useError } from '../contexts/ErrorContext'
 import { AppError } from '../types/error'
 import type { ErrorCode, ErrorSeverity, ErrorCategory } from '../types/error'
 
+interface UseErrorHandlerOptions {
+  autoHideDuration?: number
+}
+
 /**
  * エラーハンドリング用のカスタムフック
  */
-export function useErrorHandler() {
-  const { handleError, retryOperation, addError } = useError()
+export function useErrorHandler(options: UseErrorHandlerOptions = {}) {
+  const { handleError: contextHandleError, addError } = useError()
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const { autoHideDuration } = options
+
+  // 汎用エラーハンドラー
+  const handleError = useCallback((error: unknown, context?: Record<string, any>) => {
+    let errorMessage = 'エラーが発生しました'
+    
+    if (error instanceof AppError) {
+      errorMessage = error.userMessage || error.technicalMessage || error.message
+    } else if (typeof error === 'object' && error !== null && 'userMessage' in error) {
+      const appError = error as AppError
+      errorMessage = appError.userMessage || appError.technicalMessage || appError.message
+    } else if (error instanceof Error) {
+      errorMessage = error.message
+      
+      // ネットワークエラーの特定
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。'
+      }
+    } else if (typeof error === 'object' && error !== null && 'code' in error) {
+      // Firebase エラーの処理
+      const firebaseError = error as { code: string; message: string }
+      switch (firebaseError.code) {
+        case 'permission-denied':
+          errorMessage = 'アクセス権限がありません'
+          break
+        default:
+          errorMessage = firebaseError.message
+      }
+    }
+    
+    setError(errorMessage)
+    contextHandleError(error, context)
+    
+    // 自動クリア
+    if (autoHideDuration) {
+      setTimeout(() => {
+        setError(null)
+      }, autoHideDuration)
+    }
+    
+    return errorMessage
+  }, [contextHandleError, autoHideDuration])
+
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
+  // 非同期操作実行
+  const executeAsync = useCallback(async <T>(operation: () => Promise<T>): Promise<T> => {
+    setIsLoading(true)
+    try {
+      const result = await operation()
+      setError(null)
+      return result
+    } catch (err) {
+      handleError(err)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [handleError])
+
+  // リトライ機能
+  const retry = useCallback(async <T>(
+    operation: () => Promise<T>, 
+    maxAttempts: number = 3
+  ): Promise<T> => {
+    setIsLoading(true)
+    let lastError: unknown
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const result = await operation()
+        setError(null)
+        return result
+      } catch (err) {
+        lastError = err
+        if (attempt === maxAttempts) {
+          handleError(err)
+          throw err
+        }
+        // 少し待ってからリトライ
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+      }
+    }
+    
+    setIsLoading(false)
+    throw lastError
+  }, [handleError])
 
   /**
    * Firebase Auth エラーのハンドリング
@@ -135,74 +230,13 @@ export function useErrorHandler() {
     return appError
   }, [addError])
 
-  /**
-   * 非同期操作のラッパー（エラーハンドリング付き）
-   */
-  const withErrorHandling = useCallback(<T>(
-    operation: () => Promise<T>,
-    options?: {
-      context?: Record<string, any>
-      retry?: boolean
-      errorMessage?: string
-    }
-  ) => {
-    const wrappedOperation = async (): Promise<T> => {
-      try {
-        return await operation()
-      } catch (error) {
-        const appError = handleError(error, options?.context)
-        
-        // カスタムエラーメッセージがある場合は上書き
-        if (options?.errorMessage) {
-          const customError = new AppError({
-            ...appError,
-            userMessage: options.errorMessage
-          })
-          addError(customError)
-          throw customError
-        }
-        
-        throw appError
-      }
-    }
-
-    // リトライが有効な場合
-    if (options?.retry) {
-      return retryOperation(wrappedOperation)
-    }
-
-    return wrappedOperation()
-  }, [handleError, retryOperation, addError])
-
-  /**
-   * リトライ付き非同期操作
-   */
-  const withRetry = useCallback(<T>(
-    operation: () => Promise<T>,
-    options?: {
-      maxRetries?: number
-      baseDelay?: number
-      context?: Record<string, any>
-    }
-  ) => {
-    const retryConfig = options ? {
-      maxRetries: options.maxRetries,
-      baseDelay: options.baseDelay
-    } : undefined
-
-    return retryOperation(async () => {
-      try {
-        return await operation()
-      } catch (error) {
-        handleError(error, options?.context)
-        throw error
-      }
-    }, retryConfig)
-  }, [retryOperation, handleError])
-
   return {
-    // 基本エラーハンドリング
+    error,
+    isLoading,
     handleError,
+    clearError,
+    executeAsync,
+    retry,
     handleAuthError,
     handleFirestoreError,
     handleStorageError,
@@ -210,62 +244,6 @@ export function useErrorHandler() {
     handleValidationError,
     handlePermissionError,
     handleNotFoundError,
-    createError,
-    
-    // 非同期操作ヘルパー
-    withErrorHandling,
-    withRetry,
-    retryOperation
-  }
-}
-
-/**
- * 特定のサービス用エラーハンドラー
- */
-export function useServiceErrorHandler(serviceName: string) {
-  const errorHandler = useErrorHandler()
-
-  const createServiceError = useCallback((
-    code: ErrorCode,
-    severity: ErrorSeverity,
-    userMessage: string,
-    technicalMessage?: string,
-    context?: Record<string, any>
-  ) => {
-    return errorHandler.createError({
-      code,
-      severity,
-      category: 'system',
-      userMessage,
-      technicalMessage,
-      context: {
-        ...context,
-        service: serviceName
-      }
-    })
-  }, [errorHandler, serviceName])
-
-  const wrapServiceCall = useCallback(<T>(
-    operation: () => Promise<T>,
-    operationName: string,
-    options?: {
-      retry?: boolean
-      userMessage?: string
-    }
-  ) => {
-    return errorHandler.withErrorHandling(operation, {
-      context: {
-        service: serviceName,
-        operation: operationName
-      },
-      retry: options?.retry,
-      errorMessage: options?.userMessage
-    })
-  }, [errorHandler, serviceName])
-
-  return {
-    ...errorHandler,
-    createServiceError,
-    wrapServiceCall
+    createError
   }
 }

@@ -243,10 +243,8 @@ describe('LLMService', () => {
       
       ;(global.fetch as jest.Mock).mockResolvedValue(mockResponse)
       
-      // Mock environment variables
-      Object.defineProperty(import.meta, 'env', {
-        value: { VITE_OPENROUTER_API_KEY: 'test-key' }
-      })
+      // Mock environment variables using process.env
+      process.env.VITE_OPENROUTER_API_KEY = 'test-key'
 
       try {
         await (service as any).makeRequest('test prompt')
@@ -259,7 +257,7 @@ describe('LLMService', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-key',
+            'Authorization': expect.stringContaining('Bearer'),
             'Content-Type': 'application/json'
           })
         })

@@ -1,6 +1,5 @@
-import { collection, doc, addDoc, getDocs, updateDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore'
-import { db } from './firebase'
-import { useAuth } from '../contexts/AuthContext'
+import { collection, addDoc, getDocs, updateDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore'
+import { firebaseService } from './firebase'
 
 export interface UserActivity {
   id?: string
@@ -63,7 +62,7 @@ class AnalyticsService {
     }
 
     try {
-      await addDoc(collection(db, 'analytics_sessions'), sessionData)
+      await addDoc(collection(firebaseService.getFirestore(), 'analytics_sessions'), sessionData)
       await this.trackActivity(userId, 'login')
     } catch (error) {
       console.error('Failed to start analytics session:', error)
@@ -107,7 +106,7 @@ class AnalyticsService {
     }
 
     try {
-      await addDoc(collection(db, 'analytics_activities'), activity)
+      await addDoc(collection(firebaseService.getFirestore(), 'analytics_activities'), activity)
       
       // セッションデータを更新
       await this.updateSessionActivity(userId)
@@ -127,11 +126,11 @@ class AnalyticsService {
   }
 
   // セッションアクティビティ更新
-  private async updateSessionActivity(userId: string): Promise<void> {
+  private async updateSessionActivity(_userId: string): Promise<void> {
     if (!this.currentSessionId) return
 
     try {
-      const sessionsRef = collection(db, 'analytics_sessions')
+      const sessionsRef = collection(firebaseService.getFirestore(), 'analytics_sessions')
       const q = query(
         sessionsRef,
         where('sessionId', '==', this.currentSessionId),
@@ -161,7 +160,7 @@ class AnalyticsService {
 
       // DAU計算
       const dauQuery = query(
-        collection(db, 'analytics_activities'),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
         where('timestamp', '>=', Timestamp.fromDate(yesterday)),
         where('action', '==', 'login')
       )
@@ -170,7 +169,7 @@ class AnalyticsService {
 
       // MAU計算
       const mauQuery = query(
-        collection(db, 'analytics_activities'),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
         where('timestamp', '>=', Timestamp.fromDate(lastMonth)),
         where('action', '==', 'login')
       )
@@ -178,11 +177,11 @@ class AnalyticsService {
       const mau = new Set(mauSnapshot.docs.map(doc => doc.data().userId)).size
 
       // 総ユーザー数
-      const usersSnapshot = await getDocs(collection(db, 'users'))
+      const usersSnapshot = await getDocs(collection(firebaseService.getFirestore(), 'users'))
       const totalUsers = usersSnapshot.size
 
       // 総記録数
-      const recordsSnapshot = await getDocs(collection(db, 'tasting_records'))
+      const recordsSnapshot = await getDocs(collection(firebaseService.getFirestore(), 'tasting_records'))
       const totalRecords = recordsSnapshot.size
 
       // 平均記録数
@@ -190,7 +189,7 @@ class AnalyticsService {
 
       // クイズ完了率計算
       const quizActivities = query(
-        collection(db, 'analytics_activities'),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
         where('action', '==', 'quiz_completed'),
         where('timestamp', '>=', Timestamp.fromDate(lastMonth))
       )
@@ -200,7 +199,7 @@ class AnalyticsService {
 
       // 7日間リテンション率計算
       const retentionUsers = query(
-        collection(db, 'analytics_activities'),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
         where('timestamp', '>=', Timestamp.fromDate(last7Days)),
         where('action', '==', 'login')
       )
@@ -210,7 +209,7 @@ class AnalyticsService {
 
       // 機能使用統計
       const featureQuery = query(
-        collection(db, 'analytics_activities'),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
         where('action', '==', 'feature_used'),
         where('timestamp', '>=', Timestamp.fromDate(lastMonth))
       )
@@ -237,7 +236,7 @@ class AnalyticsService {
         .slice(0, 10)
 
       // 平均セッション時間計算
-      const sessionsSnapshot = await getDocs(collection(db, 'analytics_sessions'))
+      const sessionsSnapshot = await getDocs(collection(firebaseService.getFirestore(), 'analytics_sessions'))
       let totalSessionDuration = 0
       let sessionCount = 0
       
@@ -270,8 +269,8 @@ class AnalyticsService {
     }
   }
 
-  // ユーザー個別分析
-  async getUserAnalytics(userId: string, days: number = 30): Promise<{
+  // ユーザー個別分析  
+  async getUserAnalytics(_userId: string, days: number = 30): Promise<{
     totalActivities: number
     sessionCount: number
     averageSessionDuration: number
@@ -283,8 +282,8 @@ class AnalyticsService {
       
       // ユーザーのアクティビティ取得
       const activitiesQuery = query(
-        collection(db, 'analytics_activities'),
-        where('userId', '==', userId),
+        collection(firebaseService.getFirestore(), 'analytics_activities'),
+        where('userId', '==', _userId),
         where('timestamp', '>=', Timestamp.fromDate(startDate)),
         orderBy('timestamp', 'desc')
       )
@@ -292,8 +291,8 @@ class AnalyticsService {
       
       // セッション取得
       const sessionsQuery = query(
-        collection(db, 'analytics_sessions'),
-        where('userId', '==', userId),
+        collection(firebaseService.getFirestore(), 'analytics_sessions'),
+        where('userId', '==', _userId),
         where('startTime', '>=', Timestamp.fromDate(startDate))
       )
       const sessionsSnapshot = await getDocs(sessionsQuery)

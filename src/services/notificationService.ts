@@ -2,6 +2,11 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import type { Messaging } from 'firebase/messaging'
 import firebaseService from './firebase'
 
+// Helper function to get environment variables safely
+const getEnvVar = (key: string): string => {
+  return process.env[key] || ''
+}
+
 export interface NotificationPreferences {
   streakReminder: boolean
   quizReminder: boolean
@@ -24,7 +29,7 @@ export interface NotificationSchedule {
 export class NotificationService {
   private static instance: NotificationService
   private messaging: Messaging | null = null
-  private vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY
+  private vapidKey = getEnvVar('VITE_FIREBASE_VAPID_KEY')
   
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {

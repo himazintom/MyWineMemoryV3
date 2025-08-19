@@ -1,5 +1,4 @@
 export default {
-  testEnvironment: 'jsdom',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -17,6 +16,9 @@ export default {
     }
   },
   setupFiles: ['<rootDir>/src/test/jest.setup.js'],
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons']
+  },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   testMatch: [
     '**/__tests__/**/*.{ts,tsx}',
@@ -36,6 +38,7 @@ export default {
     '^@store/(.*)$': '<rootDir>/src/store/$1',
     '^@contexts/(.*)$': '<rootDir>/src/contexts/$1'
   },
+  testEnvironment: 'jsdom',
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
@@ -44,10 +47,9 @@ export default {
       }
     }]
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(.*\\.mjs$))'
+  ],
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  }
+  preset: 'ts-jest/presets/default-esm'
 }

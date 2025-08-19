@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { analyticsService, KPIMetrics } from '../services/analyticsService'
+import { analyticsService, type KPIMetrics } from '../services/analyticsService'
 import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from './common/LoadingSpinner'
 import ErrorMessage from './common/ErrorMessage'
-import { Line, Bar, Pie } from 'react-chartjs-2'
+import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -57,7 +57,7 @@ const AnalyticsDashboard: React.FC = () => {
 
     try {
       // 管理者の場合はKPI全体を表示
-      if (userProfile?.isAdmin) {
+      if (userProfile?.subscription?.plan === 'premium') {
         const kpis = await analyticsService.calculateKPIs()
         setKpiMetrics(kpis)
       }
@@ -159,7 +159,7 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
 
         {/* KPI全体表示（管理者のみ） */}
-        {userProfile?.isAdmin && kpiMetrics && (
+        {userProfile?.subscription?.plan === 'premium' && kpiMetrics && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">📈 KPI概要</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
