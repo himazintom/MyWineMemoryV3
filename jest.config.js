@@ -50,6 +50,5 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$))'
   ],
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  preset: 'ts-jest/presets/default-esm'
+  extensionsToTreatAsEsm: ['.ts', '.tsx']
 }
