@@ -10,9 +10,9 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
     reviewers:
-      - "your-github-username"
+      - "himazintom"
     assignees:
-      - "your-github-username"
+      - "himazintom"
     commit-message:
       prefix: "deps"
       include: "scope"
