@@ -4,6 +4,17 @@
 
 This guide covers the complete deployment process for MyWineMemoryV3, including staging and production environments.
 
+## ⚠️ Important Update (August 2024)
+
+**Firebase App Hosting → Firebase Hosting Migration**
+
+Due to configuration conflicts and deployment issues, the project has been migrated from Firebase App Hosting to traditional Firebase Hosting:
+
+- ✅ **Removed**: Firebase App Hosting backend (`my-wine-memory-v3`)
+- ✅ **Active**: Firebase Hosting (`https://mywinememoryv3.web.app`)
+- ✅ **Fixed**: CI/CD pipeline errors and build failures
+- ✅ **Optimized**: Performance headers and caching configuration
+
 ## 🏗️ Architecture
 
 ```
