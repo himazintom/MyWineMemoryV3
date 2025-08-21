@@ -29,7 +29,7 @@
     "auto-commit:no-push": "tsx scripts/auto-commit.ts --no-push",
     "claude-commit": "npm run auto-commit",
     "claude-start": "tsx scripts/claude-workflow.ts start",
-    "claude-check": "tsx scripts/claude-workflow.ts check", 
+    "claude-check": "tsx scripts/claude-workflow.ts check",
     "claude-save": "tsx scripts/claude-workflow.ts save",
     "claude-complete": "tsx scripts/claude-workflow.ts complete",
     "claude-pr": "tsx scripts/claude-workflow.ts pr",
@@ -41,7 +41,6 @@
     "postinstall": "tsx scripts/postinstall.ts"
   },
   "dependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.46.2",
     "@sentry/react": "^10.5.0",
     "@sentry/vite-plugin": "^4.1.1",
     "@stripe/stripe-js": "^7.8.0",
@@ -81,6 +80,7 @@
     "jest-environment-jsdom": "^30.0.5",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.1",
+    "tsx": "^4.20.4",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
