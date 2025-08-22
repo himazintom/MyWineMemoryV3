@@ -23,7 +23,6 @@ export default defineConfig({
     
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'My Wine Memory',
         short_name: 'Wine Memory',
@@ -33,13 +32,23 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: '/images/logo-icon.svg',
             sizes: '192x192',
+            type: 'image/svg+xml'
+          },
+          {
+            src: '/images/logo-icon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml'
+          },
+          {
+            src: '/images/android/playstore-icon.png',
+            sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
+            src: '/images/ios/iTunesArtwork@2x.png',
+            sizes: '1024x1024',
             type: 'image/png'
           }
         ]

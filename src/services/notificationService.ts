@@ -4,6 +4,21 @@ import firebaseService from './firebase'
 
 // Helper function to get environment variables safely
 const getEnvVar = (key: string): string => {
+  // Check if we're in a browser environment with Vite
+  if (typeof window !== 'undefined') {
+    // Try to access Vite's import.meta.env in production build
+    try {
+      // Use a function to prevent Jest from parsing import.meta
+      const getImportMeta = new Function('return typeof import !== "undefined" && import.meta && import.meta.env')
+      const importMetaEnv = getImportMeta()
+      if (importMetaEnv) {
+        return importMetaEnv[key] || ''
+      }
+    } catch (e) {
+      // Fallback silently
+    }
+  }
+  // Fallback to process.env for Node.js environments (testing and SSR)
   return process.env[key] || ''
 }
 
