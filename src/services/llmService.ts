@@ -2,22 +2,24 @@ import type { TastingRecord } from '../types'
 
 // Helper function to get environment variables safely
 const getEnvVar = (key: string): string => {
-  // Check if we're in a browser environment with Vite
+  // In test/Node.js environment or if process is available, use process.env
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || ''
+  }
+  
+  // For browser/Vite environment in production, directly access import.meta.env
+  // This code will only be reached in browser environments during runtime
   if (typeof window !== 'undefined') {
-    // Try to access Vite's import.meta.env in production build
     try {
-      // Use a function to prevent Jest from parsing import.meta
-      const getImportMeta = new Function('return typeof import !== "undefined" && import.meta && import.meta.env')
-      const importMetaEnv = getImportMeta()
-      if (importMetaEnv) {
-        return importMetaEnv[key] || ''
-      }
+      // Use eval to prevent Jest from trying to parse import.meta at compile time
+      const env = eval('import.meta.env')
+      return env?.[key] || ''
     } catch (e) {
-      // Fallback silently
+      return ''
     }
   }
-  // Fallback to process.env for Node.js environments (testing and SSR)
-  return process.env[key] || ''
+  
+  return ''
 }
 
 export interface LLMModel {

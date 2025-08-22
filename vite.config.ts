@@ -32,23 +32,28 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/images/logo-icon.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml'
+            src: '/images/android/mipmap-hdpi/ic_launcher.png',
+            sizes: '72x72',
+            type: 'image/png'
           },
           {
-            src: '/images/logo-icon.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml'
+            src: '/images/android/mipmap-xhdpi/ic_launcher.png',
+            sizes: '96x96',
+            type: 'image/png'
+          },
+          {
+            src: '/images/android/mipmap-xxhdpi/ic_launcher.png',
+            sizes: '144x144',
+            type: 'image/png'
+          },
+          {
+            src: '/images/android/mipmap-xxxhdpi/ic_launcher.png',
+            sizes: '192x192',
+            type: 'image/png'
           },
           {
             src: '/images/android/playstore-icon.png',
             sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: '/images/ios/iTunesArtwork@2x.png',
-            sizes: '1024x1024',
             type: 'image/png'
           }
         ]
