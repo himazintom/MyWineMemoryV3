@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Run type checking
         run: npm run type-check
@@ -66,7 +66,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Build application
         run: npm run build
@@ -101,7 +101,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Run security audit
         run: npm audit --audit-level=moderate
@@ -131,7 +131,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -170,7 +170,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -205,7 +205,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci --omit=optional
+        run: npm ci
         
       - name: Download build artifacts
         uses: actions/download-artifact@v4
