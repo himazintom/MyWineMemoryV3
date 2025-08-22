@@ -89,6 +89,6 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.46.2",
-    "@rollup/rollup-win32-x64-msvc": "^4.46.2"
+    "@rollup/rollup-win32-x64-msvc": "^4.47.1"
   }
 }
