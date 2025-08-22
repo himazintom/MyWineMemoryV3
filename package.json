@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dev": "tsc -b && vite build --mode development",
+    "build:local": "echo 'ローカルビルドは.env.developmentを使用' && tsc -b && vite build --mode development",
+    "build:prod": "echo 'WARNING: 本番ビルドには本番環境変数が必要です' && tsc -b && vite build --mode production",
     "lint": "echo 'Lint check passed - warnings allowed for development build'",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
     "type-check": "tsc --noEmit",

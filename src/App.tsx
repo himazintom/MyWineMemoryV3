@@ -34,8 +34,8 @@ function App() {
       <ErrorProvider>
         <ThemeProvider>
           <AuthProvider>
-            <AnalyticsWrapper>
-              <Router>
+            <Router>
+              <AnalyticsWrapper>
                 <ScrollToTop />
                 <Layout>
           <Suspense fallback={<LoadingSpinner />}>
@@ -71,8 +71,8 @@ function App() {
             </Routes>
           </Suspense>
                 </Layout>
-              </Router>
-            </AnalyticsWrapper>
+              </AnalyticsWrapper>
+            </Router>
           </AuthProvider>
         </ThemeProvider>
       </ErrorProvider>
