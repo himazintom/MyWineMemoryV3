@@ -7,6 +7,7 @@ import {
   createRoutesFromChildren,
   matchRoutes 
 } from 'react-router-dom'
+import { getEnvVar } from '../utils/env'
 
 /**
  * Sentryエラートラッキングサービス
@@ -24,9 +25,9 @@ class SentryService {
     }
 
     try {
-      const dsn = import.meta.env.VITE_SENTRY_DSN
-      const environment = import.meta.env.VITE_ENVIRONMENT || 'development'
-      const release = import.meta.env.VITE_APP_VERSION || '1.0.0'
+      const dsn = getEnvVar('VITE_SENTRY_DSN')
+      const environment = getEnvVar('VITE_ENVIRONMENT') || 'development'
+      const release = getEnvVar('VITE_APP_VERSION') || '1.0.0'
 
       if (!dsn) {
         console.warn('Sentry DSN not found. Error tracking will be disabled.')

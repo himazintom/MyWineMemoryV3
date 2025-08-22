@@ -1,26 +1,6 @@
 import { initializeApp } from 'firebase/app'
+import { getEnvVar } from '../utils/env'
 
-// Helper function to get environment variables safely
-const getEnvVar = (key: string): string => {
-  // In test/Node.js environment or if process is available, use process.env
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] || ''
-  }
-  
-  // For browser/Vite environment in production, directly access import.meta.env
-  // This code will only be reached in browser environments during runtime
-  if (typeof window !== 'undefined') {
-    try {
-      // Use eval to prevent Jest from trying to parse import.meta at compile time
-      const env = eval('import.meta.env')
-      return env?.[key] || ''
-    } catch (e) {
-      return ''
-    }
-  }
-  
-  return ''
-}
 import type { FirebaseApp } from 'firebase/app'
 import { 
   getAuth, 
@@ -78,7 +58,16 @@ const firebaseConfig = {
 
 // 環境変数の検証
 function validateEnvironment(): void {
-  const requiredEnvVars = [
+  const requiredVars = [
+    firebaseConfig.apiKey,
+    firebaseConfig.authDomain, 
+    firebaseConfig.projectId,
+    firebaseConfig.storageBucket,
+    firebaseConfig.messagingSenderId,
+    firebaseConfig.appId
+  ]
+  
+  const requiredVarNames = [
     'VITE_FIREBASE_API_KEY',
     'VITE_FIREBASE_AUTH_DOMAIN', 
     'VITE_FIREBASE_PROJECT_ID',
@@ -87,7 +76,9 @@ function validateEnvironment(): void {
     'VITE_FIREBASE_APP_ID'
   ]
   
-  const missing = requiredEnvVars.filter(envVar => !getEnvVar(envVar))
+  const missing = requiredVars
+    .map((value, index) => !value ? requiredVarNames[index] : null)
+    .filter(Boolean) as string[]
   
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`)

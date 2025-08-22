@@ -2,6 +2,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import type { Stripe } from '@stripe/stripe-js'
 import firebaseService from './firebase'
 import { doc, getDoc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore'
+import { getEnvVar } from '../utils/env'
 
 // サブスクリプション関連の型定義
 export interface SubscriptionPlan {
@@ -49,7 +50,7 @@ class StripeService {
    */
   async initialize(): Promise<void> {
     try {
-      const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+      const publishableKey = getEnvVar('VITE_STRIPE_PUBLISHABLE_KEY')
       
       if (!publishableKey) {
         throw new Error('Stripe publishable key not found')
@@ -97,7 +98,7 @@ class StripeService {
         price: 980,
         currency: 'JPY',
         interval: 'month',
-        stripePriceId: process.env.VITE_STRIPE_PREMIUM_PRICE_ID || 'price_premium_monthly',
+        stripePriceId: getEnvVar('VITE_STRIPE_PREMIUM_PRICE_ID') || 'price_premium_monthly',
         isPopular: true,
         features: [
           'フリープランの全機能',
@@ -116,7 +117,7 @@ class StripeService {
         price: 9800,
         currency: 'JPY',
         interval: 'year',
-        stripePriceId: process.env.VITE_STRIPE_PREMIUM_YEARLY_PRICE_ID || 'price_premium_yearly',
+        stripePriceId: getEnvVar('VITE_STRIPE_PREMIUM_YEARLY_PRICE_ID') || 'price_premium_yearly',
         features: [
           'プレミアムプランの全機能',
           '2ヶ月分お得（年額9,800円）',

@@ -1,28 +1,8 @@
 import { getMessaging, getToken, onMessage } from 'firebase/messaging'
 import type { Messaging } from 'firebase/messaging'
 import firebaseService from './firebase'
+import { getEnvVar } from '../utils/env'
 
-// Helper function to get environment variables safely
-const getEnvVar = (key: string): string => {
-  // In test/Node.js environment or if process is available, use process.env
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] || ''
-  }
-  
-  // For browser/Vite environment in production, directly access import.meta.env
-  // This code will only be reached in browser environments during runtime
-  if (typeof window !== 'undefined') {
-    try {
-      // Use eval to prevent Jest from trying to parse import.meta at compile time
-      const env = eval('import.meta.env')
-      return env?.[key] || ''
-    } catch (e) {
-      return ''
-    }
-  }
-  
-  return ''
-}
 
 export interface NotificationPreferences {
   streakReminder: boolean
