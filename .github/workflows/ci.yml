@@ -228,7 +228,7 @@ jobs:
           text: '🚀 MyWineMemoryV3 has been deployed to production successfully!'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: success()
+        if: success() && secrets.SLACK_WEBHOOK_URL != ''
         
       - name: Notify deployment failure
         uses: 8398a7/action-slack@v3
@@ -237,7 +237,7 @@ jobs:
           text: '❌ MyWineMemoryV3 deployment to production failed!'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: failure()
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
 
   performance-monitoring:
     name: Performance Monitoring
