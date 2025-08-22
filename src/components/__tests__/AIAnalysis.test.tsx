@@ -4,18 +4,22 @@ import { useAuth } from '../../contexts/AuthContext'
 
 // Mock dependencies
 jest.mock('../../contexts/AuthContext')
-const mockLLMService = {
-  analyzeWineData: jest.fn().mockResolvedValue({ analysis: 'mock analysis' }),
-  generateAdvice: jest.fn().mockResolvedValue({ advice: 'mock advice' }),
-  getUsageCount: jest.fn().mockReturnValue(5),
-  getCurrentModel: jest.fn().mockReturnValue({ id: 'gpt-4o-mini', name: 'GPT 4o Mini (無料)' })
-}
 
-jest.mock('../../services/llmService', () => ({
-  LLMService: {
-    getInstance: () => mockLLMService
+jest.mock('../../services/llmService', () => {
+  const mockLLMService = {
+    analyzeWineData: jest.fn().mockResolvedValue({ analysis: 'mock analysis' }),
+    generateAdvice: jest.fn().mockResolvedValue({ advice: 'mock advice' }),
+    getUsageCount: jest.fn().mockReturnValue(5),
+    getCurrentModel: jest.fn().mockReturnValue({ id: 'gpt-4o-mini', name: 'GPT 4o Mini (無料)' })
   }
-}))
+  
+  return {
+    LLMService: {
+      getInstance: () => mockLLMService
+    },
+    llmService: mockLLMService
+  }
+})
 jest.mock('../../services/tastingRecordService', () => ({
   tastingRecordService: {
     getUserRecords: jest.fn().mockResolvedValue([])
