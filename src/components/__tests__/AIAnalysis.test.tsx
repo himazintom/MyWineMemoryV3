@@ -4,8 +4,24 @@ import { useAuth } from '../../contexts/AuthContext'
 
 // Mock dependencies
 jest.mock('../../contexts/AuthContext')
-jest.mock('../../services/llmService')
-jest.mock('../../services/tastingRecordService')
+jest.mock('../../services/llmService', () => ({
+  LLMService: {
+    getInstance: () => ({
+      analyzeWineData: jest.fn().mockResolvedValue({ analysis: 'mock analysis' }),
+      generateAdvice: jest.fn().mockResolvedValue({ advice: 'mock advice' })
+    })
+  }
+}))
+jest.mock('../../services/tastingRecordService', () => ({
+  tastingRecordService: {
+    getUserRecords: jest.fn().mockResolvedValue([])
+  }
+}))
+jest.mock('../../services/firebase', () => ({
+  auth: { currentUser: null },
+  db: {},
+  storage: {}
+}))
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>
 

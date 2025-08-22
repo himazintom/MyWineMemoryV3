@@ -1,3 +1,6 @@
+// Polyfill for setImmediate (needed for Firebase/gRPC in Jest environment)
+global.setImmediate = global.setImmediate || ((fn, ...args) => global.setTimeout(fn, 0, ...args));
+
 // Mock import.meta.env for different contexts
 const mockEnv = {
   VITE_FIREBASE_API_KEY: 'test-api-key',
