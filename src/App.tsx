@@ -23,6 +23,7 @@ const AddRecordPage = lazy(() => import('./pages/records/AddRecordPage'))
 const StatsPage = lazy(() => import('./pages/stats/StatsPage'))
 const QuizPage = lazy(() => import('./pages/quiz/QuizPage'))
 const QuizGamePage = lazy(() => import('./pages/quiz/QuizGamePage'))
+const DailyQuizPage = lazy(() => import('./pages/quiz/DailyQuizPage'))
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
@@ -60,6 +61,7 @@ function App() {
               {/* Feature routes */}
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/quiz" element={<QuizPage />} />
+              <Route path="/quiz/daily" element={<DailyQuizPage />} />
               <Route path="/quiz/level/:level" element={<QuizGamePage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />

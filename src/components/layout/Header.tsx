@@ -1,6 +1,19 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Header() {
+  const navigate = useNavigate()
+  const { userProfile, signOut, isGuestMode } = useAuth()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      navigate('/login')
+    } catch (error) {
+      console.error('Sign out failed:', error)
+    }
+  }
+
   return (
     <header className="app-header">
       <div className="header-content">
@@ -24,9 +37,20 @@ export default function Header() {
         </nav>
         
         <div className="header-actions">
-          <Link to="/profile" className="profile-link">
-            プロフィール
-          </Link>
+          {userProfile ? (
+            <>
+              <Link to="/profile" className="profile-link">
+                {isGuestMode ? 'ゲスト' : (userProfile.displayName || 'プロフィール')}
+              </Link>
+              <button onClick={handleSignOut} className="logout-btn">
+                ログアウト
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="profile-link">
+              ログイン
+            </Link>
+          )}
         </div>
       </div>
     </header>
