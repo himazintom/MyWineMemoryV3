@@ -81,7 +81,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // ユーザープロフィールの取得または作成
           await handleUserSignIn(user)
         } else {
+          // 認証されていない場合はゲストモードに切り替え
           setUserProfile(null)
+          // 自動的にゲストモードを有効化しない（ユーザーが明示的に選択する必要がある）
         }
       } catch (err) {
         console.error('Auth state change error:', err)

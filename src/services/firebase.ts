@@ -10,7 +10,9 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth'
 import type {
   Auth, 
@@ -105,6 +107,11 @@ class FirebaseService {
     this.auth = getAuth(this.app)
     this.firestore = getFirestore(this.app)
     this.storage = getStorage(this.app)
+    
+    // 認証の永続性を設定（ブラウザを閉じても認証状態を保持）
+    setPersistence(this.auth, browserLocalPersistence).catch(error => {
+      console.warn('Failed to set auth persistence:', error)
+    })
     
     // Google認証プロバイダーの設定
     this.googleProvider = new GoogleAuthProvider()

@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import Button from '../../components/common/Button'
 import ErrorMessage from '../../components/common/ErrorMessage'
 
 export default function ProfilePage() {
-  const { userProfile, isGuestMode, signOut, updateUserProfile, error, clearError } = useAuth()
+  const { currentUser, userProfile, isGuestMode, signOut, updateUserProfile, error, clearError } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     displayName: userProfile?.displayName || '',
@@ -41,6 +41,13 @@ export default function ProfilePage() {
       console.error('Sign out failed:', err)
     }
   }
+
+  // デバッグ用
+  useEffect(() => {
+    console.log('ProfilePage - currentUser:', currentUser)
+    console.log('ProfilePage - userProfile:', userProfile)
+    console.log('ProfilePage - isGuestMode:', isGuestMode)
+  }, [currentUser, userProfile, isGuestMode])
 
   return (
     <div className="profile-page">
@@ -150,8 +157,8 @@ export default function ProfilePage() {
                   </form>
                 ) : (
                   <>
-                    <h2>{userProfile?.displayName || 'Unknown User'}</h2>
-                    <p>{userProfile?.email}</p>
+                    <h2>{userProfile?.displayName || currentUser?.displayName || 'Unknown User'}</h2>
+                    <p>{userProfile?.email || currentUser?.email || ''}</p>
                     <p className="join-date">
                       登録日: {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('ja-JP') : '不明'}
                     </p>
